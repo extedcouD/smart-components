@@ -1,9 +1,12 @@
 export interface CompletionPromptInput {
   value: string;
   context?: string;
+  /** Hint the model that the input is multi-line (textarea) so it continues
+   *  the current paragraph without starting a new one. */
+  multiline?: boolean;
 }
 
-export function buildCompletionPrompt({ value, context }: CompletionPromptInput): {
+export function buildCompletionPrompt({ value, context, multiline }: CompletionPromptInput): {
   system: string;
   prompt: string;
 } {
@@ -12,6 +15,9 @@ export function buildCompletionPrompt({ value, context }: CompletionPromptInput)
     'Output ONLY the continuation — no quotes, no preamble, no explanation. ' +
     'Keep it concise (one short clause or sentence). ' +
     'If you would have nothing useful to add, return an empty string.' +
+    (multiline
+      ? '\n\nYou may continue with line breaks if natural, but do not start a new paragraph.'
+      : '') +
     (context ? `\n\nContext: ${context}` : '');
   return { system, prompt: value };
 }
@@ -49,4 +55,26 @@ export function parseSuggestionResponse(raw: string): string[] {
     .split('\n')
     .map((l) => l.replace(/^[-*\d.)\s]+/, '').trim())
     .filter(Boolean);
+}
+
+export interface RewritePromptInput {
+  value: string;
+  instruction: string;
+  context?: string;
+}
+
+export const DEFAULT_REWRITE_INSTRUCTION =
+  'Improve clarity and fix any grammar issues. Keep the same meaning and approximate length.';
+
+export function buildRewritePrompt({ value, instruction, context }: RewritePromptInput): {
+  system: string;
+  prompt: string;
+} {
+  const system =
+    'You rewrite text according to the user\'s instruction. ' +
+    'Output ONLY the rewritten text — no preamble, no explanation, no surrounding quotation marks. ' +
+    'Preserve the original meaning unless the instruction explicitly says otherwise.' +
+    (context ? `\n\nContext: ${context}` : '');
+  const prompt = `Instruction: ${instruction}\n\nText:\n${value}`;
+  return { system, prompt };
 }

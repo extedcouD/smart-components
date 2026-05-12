@@ -3,10 +3,14 @@
   display: inline-block;
 }
 
-.input {
+.textarea {
   position: relative;
   background: transparent;
   font: inherit;
   width: 100%;
   box-sizing: border-box;
+  resize: vertical;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }

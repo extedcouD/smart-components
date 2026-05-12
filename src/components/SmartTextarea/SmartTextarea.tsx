@@ -1,15 +1,20 @@
-import { type InputHTMLAttributes, type ReactNode } from 'react';
+import {
+  useLayoutEffect,
+  useMemo,
+  type ReactNode,
+  type TextareaHTMLAttributes,
+} from 'react';
 import { useTextFieldGate } from '../internal/useTextFieldGate';
 import { GhostOverlay } from '../internal/GhostOverlay';
-import styles from './SmartTextbox.module.css';
+import styles from './SmartTextarea.module.css';
 
-type NativeInputProps = Omit<
-  InputHTMLAttributes<HTMLInputElement>,
+type NativeTextareaProps = Omit<
+  TextareaHTMLAttributes<HTMLTextAreaElement>,
   'value' | 'onChange' | 'defaultValue'
 >;
 
-export interface SmartTextboxProps extends NativeInputProps {
-  /** Current input value (controlled). */
+export interface SmartTextareaProps extends NativeTextareaProps {
+  /** Current textarea value (controlled). */
   value: string;
   /** Called with the new value on user input or accept. */
   onChange: (value: string) => void;
@@ -29,8 +34,12 @@ export interface SmartTextboxProps extends NativeInputProps {
   acceptKey?: string;
   /** Key that dismisses the ghost suggestion. Default: 'Escape'. */
   dismissKey?: string;
-  /** Max tokens for the completion call. Default: 32. */
+  /** Max tokens for the completion call. Default: 64. */
   maxTokens?: number;
+  /** Stop sequences for the completion. Default: ['\n\n']. */
+  stop?: string[];
+  /** Auto-grow the textarea to fit content. Default: false. */
+  autoResize?: boolean;
   /** Render-prop override for the ghost text. */
   renderGhost?: (suggestion: string) => ReactNode;
   /** Class name applied to the outer wrapper. */
@@ -39,7 +48,9 @@ export interface SmartTextboxProps extends NativeInputProps {
   onAccept?: (accepted: string, finalValue: string) => void;
 }
 
-export function SmartTextbox({
+const DEFAULT_STOP = ['\n\n'];
+
+export function SmartTextarea({
   value,
   onChange,
   context,
@@ -49,7 +60,9 @@ export function SmartTextbox({
   disableAI = false,
   acceptKey = 'ArrowRight',
   dismissKey = 'Escape',
-  maxTokens = 32,
+  maxTokens = 64,
+  stop,
+  autoResize = false,
   renderGhost,
   wrapperClassName,
   onAccept,
@@ -60,9 +73,11 @@ export function SmartTextbox({
   onSelect,
   onChange: _legacyOnChange,
   ...rest
-}: SmartTextboxProps) {
+}: SmartTextareaProps) {
+  const effectiveStop = useMemo(() => stop ?? DEFAULT_STOP, [stop]);
+
   const { ref, suggestion, ghostVisible, buildKeyDown, buildFocus, buildBlur, buildSelect } =
-    useTextFieldGate<HTMLInputElement>({
+    useTextFieldGate<HTMLTextAreaElement>({
       value,
       onChange,
       onAccept,
@@ -73,8 +88,19 @@ export function SmartTextbox({
       debounceMs,
       stream,
       maxTokens,
+      stop: effectiveStop,
+      multiline: true,
       enabled: !disableAI,
     });
+
+  // Auto-resize: grow textarea to fit content.
+  useLayoutEffect(() => {
+    if (!autoResize) return;
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [ref, autoResize, value, suggestion, ghostVisible]);
 
   return (
     <span className={[styles.root, wrapperClassName].filter(Boolean).join(' ')}>
@@ -84,11 +110,11 @@ export function SmartTextbox({
         suggestion={suggestion}
         visible={ghostVisible}
         renderGhost={renderGhost}
-        testId="smart-textbox-ghost"
+        testId="smart-textarea-ghost"
       />
-      <input
+      <textarea
         ref={ref}
-        className={[styles.input, className].filter(Boolean).join(' ')}
+        className={[styles.textarea, className].filter(Boolean).join(' ')}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={buildKeyDown(onKeyDown)}

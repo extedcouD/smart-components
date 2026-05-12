@@ -20,12 +20,23 @@ export type {
 export { SmartTextbox } from './components/SmartTextbox';
 export type { SmartTextboxProps } from './components/SmartTextbox';
 
+export { SmartTextarea } from './components/SmartTextarea';
+export type { SmartTextareaProps } from './components/SmartTextarea';
+
 export { SmartSuggestion } from './components/SmartSuggestion';
 export type { SmartSuggestionProps, SmartSuggestionRenderItemArgs } from './components/SmartSuggestion';
+
+export { SmartRewrite, DEFAULT_REWRITE_PRESETS } from './components/SmartRewrite';
+export type {
+  SmartRewriteProps,
+  SmartRewritePreset,
+  SmartRewriteRenderArgs,
+} from './components/SmartRewrite';
 
 export {
   useGhostCompletion,
   useSuggestionList,
+  useRewrite,
   useDebouncedValue,
   useLRU,
 } from './hooks';
@@ -36,5 +47,8 @@ export type {
   UseSuggestionListOptions,
   UseSuggestionListResult,
   SuggestionStatus,
+  UseRewriteOptions,
+  UseRewriteResult,
+  RewriteStatus,
   LRU,
 } from './hooks';

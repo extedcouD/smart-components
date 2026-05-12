@@ -13,3 +13,5 @@ export type {
   UseSuggestionListResult,
   SuggestionStatus,
 } from './useSuggestionList';
+export { useRewrite } from './useRewrite';
+export type { UseRewriteOptions, UseRewriteResult, RewriteStatus } from './useRewrite';

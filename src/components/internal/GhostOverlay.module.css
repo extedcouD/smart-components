@@ -1,0 +1,18 @@
+.mirror {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  color: rgba(0, 0, 0, 0.35);
+  /* Box-model + text-layout properties (font, padding, border-width, white-space, etc.)
+     are copied at runtime from the target via getComputedStyle so the ghost lands
+     exactly where the next character would render. */
+}
+
+.ghost {
+  /* Inherits white-space from the mirror so wrapping matches the target. */
+}
+
+.ghostHidden {
+  display: none;
+}

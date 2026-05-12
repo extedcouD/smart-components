@@ -1,5 +1,6 @@
 import {
   useCallback,
+  useEffect,
   useId,
   useRef,
   useState,
@@ -80,6 +81,7 @@ export function SmartSuggestion({
   ...rest
 }: SmartSuggestionProps) {
   const listId = useId();
+  const listRef = useRef<HTMLUListElement>(null);
   const [rawActiveIndex, setActiveIndex] = useState(-1);
   const [open, setOpen] = useState(false);
   const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -94,6 +96,23 @@ export function SmartSuggestion({
   });
 
   const activeIndex = rawActiveIndex >= items.length ? items.length - 1 : rawActiveIndex;
+
+  useEffect(() => {
+    if (activeIndex < 0) return;
+    const list = listRef.current;
+    if (!list) return;
+    const item = list.querySelector<HTMLLIElement>(`#${CSS.escape(listId)}-opt-${activeIndex}`);
+    if (!item) return;
+    // Adjust only the list's own scroll — never the document — so the
+    // surrounding page doesn't shift when active item changes.
+    const itemTop = item.offsetTop;
+    const itemBottom = itemTop + item.offsetHeight;
+    if (itemTop < list.scrollTop) {
+      list.scrollTop = itemTop;
+    } else if (itemBottom > list.scrollTop + list.clientHeight) {
+      list.scrollTop = itemBottom - list.clientHeight;
+    }
+  }, [activeIndex, listId]);
 
   const close = useCallback(() => {
     setOpen(false);
@@ -172,6 +191,7 @@ export function SmartSuggestion({
         {...rest}
       />
       <ul
+        ref={listRef}
         id={listId}
         role="listbox"
         className={listClass}
