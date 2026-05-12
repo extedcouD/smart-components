@@ -1,4 +1,3 @@
-import OpenAI from 'openai';
 import {
   SMART_CLIENT_PROTOCOL_VERSION,
   type CompleteRequest,
@@ -12,10 +11,34 @@ export interface OpenAIClientOptions {
   apiKey: string;
   /** Default model used when a request doesn't specify one. */
   defaultModel?: string;
-  /** Pass extra options through to the OpenAI SDK constructor. */
-  openai?: ConstructorParameters<typeof OpenAI>[0];
+  /** Override the API base URL (e.g. for Azure OpenAI or a self-hosted proxy). */
+  baseUrl?: string;
+  /** Extra headers added to every request. */
+  headers?: Record<string, string>;
   /** Silence the browser-key safety warning. Only set if you fully understand the risk. */
   silenceBrowserWarning?: boolean;
+}
+
+const DEFAULT_BASE = 'https://api.openai.com/v1';
+
+interface ChatMessage {
+  role: 'system' | 'user';
+  content: string;
+}
+
+interface ChatCompletionResponse {
+  choices?: Array<{ message?: { content?: string } }>;
+}
+
+interface ChatCompletionChunk {
+  choices?: Array<{ delta?: { content?: string } }>;
+}
+
+function buildMessages(req: CompleteRequest): ChatMessage[] {
+  const msgs: ChatMessage[] = [];
+  if (req.system) msgs.push({ role: 'system', content: req.system });
+  msgs.push({ role: 'user', content: req.prompt });
+  return msgs;
 }
 
 function warnIfBrowser(silenced: boolean | undefined): void {
@@ -29,33 +52,72 @@ function warnIfBrowser(silenced: boolean | undefined): void {
   }
 }
 
+async function* parseChatSse(res: Response, signal?: AbortSignal): AsyncIterable<string> {
+  if (!res.body) throw new Error('[smart-components/openai] response has no body');
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  try {
+    while (true) {
+      if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let idx: number;
+      while ((idx = buffer.indexOf('\n')) !== -1) {
+        const line = buffer.slice(0, idx).trim();
+        buffer = buffer.slice(idx + 1);
+        if (!line || line.startsWith(':') || !line.startsWith('data:')) continue;
+        const data = line.slice(5).trim();
+        if (data === '[DONE]') return;
+        try {
+          const chunk = JSON.parse(data) as ChatCompletionChunk;
+          const delta = chunk.choices?.[0]?.delta?.content;
+          if (delta) yield delta;
+        } catch {
+          // ignore malformed lines
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
 export function createOpenAIClient(opts: OpenAIClientOptions): SmartClient {
   warnIfBrowser(opts.silenceBrowserWarning);
 
-  const openai = new OpenAI({
-    apiKey: opts.apiKey,
-    dangerouslyAllowBrowser: typeof window !== 'undefined',
-    ...opts.openai,
-  });
+  const baseUrl = (opts.baseUrl ?? DEFAULT_BASE).replace(/\/$/, '');
+  const pickModel = (req: CompleteRequest): string =>
+    req.model ?? opts.defaultModel ?? 'gpt-4o-mini';
 
-  const caps = new Set<SmartCapability>(['complete', 'stream']);
-
-  const pickModel = (req: CompleteRequest): string => req.model ?? opts.defaultModel ?? 'gpt-4o-mini';
-
-  function buildMessages(req: CompleteRequest): { role: 'system' | 'user'; content: string }[] {
-    const msgs: { role: 'system' | 'user'; content: string }[] = [];
-    if (req.system) msgs.push({ role: 'system', content: req.system });
-    msgs.push({ role: 'user', content: req.prompt });
-    return msgs;
+  async function postChat(body: Record<string, unknown>, signal?: AbortSignal): Promise<Response> {
+    const res = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${opts.apiKey}`,
+        ...opts.headers,
+      },
+      body: JSON.stringify(body),
+      signal,
+    });
+    if (!res.ok) {
+      const detail = await res.text().catch(() => '');
+      throw new Error(
+        `[smart-components/openai] ${res.status} ${res.statusText}${detail ? ` — ${detail}` : ''}`,
+      );
+    }
+    return res;
   }
 
   return {
     protocolVersion: SMART_CLIENT_PROTOCOL_VERSION,
     id: 'openai',
-    capabilities: caps,
+    capabilities: new Set<SmartCapability>(['complete', 'stream']),
 
     async complete(req: CompleteRequest): Promise<CompleteResponse> {
-      const res = await openai.chat.completions.create(
+      const res = await postChat(
         {
           model: pickModel(req),
           messages: buildMessages(req),
@@ -63,13 +125,14 @@ export function createOpenAIClient(opts: OpenAIClientOptions): SmartClient {
           temperature: req.temperature,
           stop: req.stop,
         },
-        { signal: req.signal },
+        req.signal,
       );
-      return res.choices[0]?.message?.content ?? '';
+      const json = (await res.json()) as ChatCompletionResponse;
+      return json.choices?.[0]?.message?.content ?? '';
     },
 
     async *stream(req: CompleteRequest): AsyncIterable<string> {
-      const stream = await openai.chat.completions.create(
+      const res = await postChat(
         {
           model: pickModel(req),
           messages: buildMessages(req),
@@ -78,13 +141,9 @@ export function createOpenAIClient(opts: OpenAIClientOptions): SmartClient {
           stop: req.stop,
           stream: true,
         },
-        { signal: req.signal },
+        req.signal,
       );
-      for await (const chunk of stream) {
-        if (req.signal?.aborted) throw new DOMException('Aborted', 'AbortError');
-        const delta = chunk.choices[0]?.delta?.content;
-        if (delta) yield delta;
-      }
+      yield* parseChatSse(res, req.signal);
     },
   };
 }

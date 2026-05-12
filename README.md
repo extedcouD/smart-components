@@ -7,9 +7,9 @@ Headless React UI components powered by an LLM. Painfully small DOM, painfully c
 ```sh
 pnpm add @extedcoud/smart-components
 pnpm add react react-dom
-# only if you use the OpenAI adapter:
-pnpm add openai
 ```
+
+Zero runtime deps beyond `react` / `react-dom` — every adapter is plain `fetch`.
 
 ## Quick start
 

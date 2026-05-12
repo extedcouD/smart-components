@@ -60,7 +60,7 @@ Components are dumb. All AI logic lives in the hooks. **If you find yourself put
 
 `src/adapters/{openai,proxy,anthropic,mock}/` — each a `SmartClient` factory. Adapters are **subpath exports only** (`@extedcoud/smart-components/adapters/<name>`); never re-exported from the main barrel. This keeps `index.js` provider-agnostic and each adapter individually tree-shakeable.
 
-`openai` is an *optional* peer dep (`peerDependenciesMeta.openai.optional: true`). Adding a new adapter that needs a 3rd-party SDK: same pattern — peer dep + `peerDependenciesMeta.optional: true` + rollup `external`.
+**No runtime deps.** Every adapter uses plain `fetch`. If you add a new adapter and find yourself reaching for a 3rd-party SDK, first try the provider's HTTP API directly — for chat completion endpoints it's usually ~30 lines incl. SSE parsing. Only fall back to an SDK if the API is non-trivial (function calling, file uploads, etc.) and even then: optional peer dep + `peerDependenciesMeta.optional: true` + rollup `external`. We previously had `openai` as a peer dep; dropped it because the SDK was 16 MB for one endpoint.
 
 `createProxyClient` is the recommended prod path (consumer's backend holds the key). `createOpenAIClient` warns when run in a browser context. `createMockClient` is the canonical test/story fixture — never call live APIs from tests or Storybook.
 

@@ -62,14 +62,8 @@
     "prepublishOnly": "pnpm build"
   },
   "peerDependencies": {
-    "openai": ">=4",
     "react": ">=18",
     "react-dom": ">=18"
-  },
-  "peerDependenciesMeta": {
-    "openai": {
-      "optional": true
-    }
   },
   "devDependencies": {
     "@eslint/js": "^9",
@@ -91,7 +85,6 @@
     "eslint-plugin-react-refresh": "latest",
     "globals": "latest",
     "jsdom": "latest",
-    "openai": "^6.37.0",
     "prettier": "latest",
     "react": "latest",
     "react-dom": "latest",

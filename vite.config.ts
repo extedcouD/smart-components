@@ -31,7 +31,7 @@ export default defineConfig({
       cssFileName: 'style',
     },
     rollupOptions: {
-      external: ['react', 'react-dom', 'react/jsx-runtime', 'openai'],
+      external: ['react', 'react-dom', 'react/jsx-runtime'],
     },
     sourcemap: true,
   },
