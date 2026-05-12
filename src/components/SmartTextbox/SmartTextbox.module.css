@@ -1,0 +1,29 @@
+.root {
+  position: relative;
+  display: inline-block;
+}
+
+.input {
+  position: relative;
+  background: transparent;
+  font: inherit;
+  width: 100%;
+}
+
+.ghost {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  font: inherit;
+  color: rgba(0, 0, 0, 0.35);
+  white-space: pre;
+  overflow: hidden;
+}
+
+.ghostVisible {
+  display: block;
+}
+
+.ghostHidden {
+  display: none;
+}

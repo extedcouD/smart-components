@@ -1,0 +1,5 @@
+{
+  "version": "0.2",
+  "words": ["extedcoud", "autodocs", "tseslint", "jsdom", "vitest", "tsup", "rollup", "esbuild", "rolldown"],
+  "ignorePaths": ["node_modules", "dist", "storybook-static", "pnpm-lock.yaml"]
+}

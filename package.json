@@ -1,9 +1,12 @@
 {
-  "name": "react-ai-components",
+  "name": "@extedcoud/smart-components",
   "version": "0.0.1",
   "description": "React UI component library",
   "type": "module",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=20"
   },
@@ -18,6 +21,26 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./adapters/openai": {
+      "types": "./dist/openai.d.ts",
+      "import": "./dist/adapters/openai.js",
+      "require": "./dist/adapters/openai.cjs"
+    },
+    "./adapters/proxy": {
+      "types": "./dist/proxy.d.ts",
+      "import": "./dist/adapters/proxy.js",
+      "require": "./dist/adapters/proxy.cjs"
+    },
+    "./adapters/anthropic": {
+      "types": "./dist/anthropic.d.ts",
+      "import": "./dist/adapters/anthropic.js",
+      "require": "./dist/adapters/anthropic.cjs"
+    },
+    "./adapters/mock": {
+      "types": "./dist/mock.d.ts",
+      "import": "./dist/adapters/mock.js",
+      "require": "./dist/adapters/mock.cjs"
     },
     "./style.css": "./dist/style.css"
   },
@@ -39,8 +62,14 @@
     "prepublishOnly": "pnpm build"
   },
   "peerDependencies": {
+    "openai": ">=4",
     "react": ">=18",
     "react-dom": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "openai": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@eslint/js": "^9",
@@ -62,6 +91,7 @@
     "eslint-plugin-react-refresh": "latest",
     "globals": "latest",
     "jsdom": "latest",
+    "openai": "^6.37.0",
     "prettier": "latest",
     "react": "latest",
     "react-dom": "latest",

@@ -18,13 +18,20 @@ export default defineConfig({
   ],
   build: {
     lib: {
-      entry: resolve(__dirname, 'src/index.ts'),
+      entry: {
+        index: resolve(__dirname, 'src/index.ts'),
+        'adapters/openai': resolve(__dirname, 'src/adapters/openai/index.ts'),
+        'adapters/proxy': resolve(__dirname, 'src/adapters/proxy/index.ts'),
+        'adapters/anthropic': resolve(__dirname, 'src/adapters/anthropic/index.ts'),
+        'adapters/mock': resolve(__dirname, 'src/adapters/mock/index.ts'),
+      },
       formats: ['es', 'cjs'],
-      fileName: (format) => (format === 'es' ? 'index.js' : 'index.cjs'),
+      fileName: (format, entryName) =>
+        `${entryName}.${format === 'es' ? 'js' : 'cjs'}`,
       cssFileName: 'style',
     },
     rollupOptions: {
-      external: ['react', 'react-dom', 'react/jsx-runtime'],
+      external: ['react', 'react-dom', 'react/jsx-runtime', 'openai'],
     },
     sourcemap: true,
   },
