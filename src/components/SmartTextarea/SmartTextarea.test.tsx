@@ -167,6 +167,33 @@ describe('SmartTextarea', () => {
     expect(req.stop).toEqual(['\n\n']);
   });
 
+  it('applies ghostClassName and ghostStyle to the ghost span', async () => {
+    function H() {
+      const [v, setV] = useState('hello');
+      return (
+        <SmartProvider client={createMockClient({ complete: () => ' world' })}>
+          <SmartTextarea
+            value={v}
+            onChange={setV}
+            debounceMs={0}
+            minChars={3}
+            ghostClassName="my-ghost"
+            ghostStyle={{ color: 'rgb(255, 0, 0)', fontStyle: 'italic' }}
+            data-testid="ta"
+          />
+        </SmartProvider>
+      );
+    }
+    render(<H />);
+    focusAtEnd(screen.getByTestId('ta') as HTMLTextAreaElement);
+    await waitFor(() =>
+      expect(screen.getByTestId('smart-textarea-ghost')).toHaveTextContent(/world/),
+    );
+    const ghost = screen.getByTestId('smart-textarea-ghost');
+    expect(ghost).toHaveClass('my-ghost');
+    expect(ghost).toHaveStyle({ color: 'rgb(255, 0, 0)', fontStyle: 'italic' });
+  });
+
   it('honors disableAI', async () => {
     const complete = vi.fn().mockResolvedValue('xx');
     const client = createMockClient({ complete });

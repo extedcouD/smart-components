@@ -37,6 +37,26 @@ function ControlledTextbox(props: { stream?: boolean; context?: string }) {
   );
 }
 
+function CustomStyledGhostTextbox() {
+  const [v, setV] = useState('hello');
+  return (
+    <div style={{ font: '16px ui-sans-serif, system-ui' }}>
+      <p style={{ fontSize: 13, color: '#666', marginTop: 0 }}>
+        Ghost text recolored via <code>ghostStyle</code> — no <code>renderGhost</code> needed.
+      </p>
+      <SmartTextbox
+        value={v}
+        onChange={setV}
+        debounceMs={250}
+        minChars={3}
+        ghostStyle={{ color: '#0066cc', fontStyle: 'italic', opacity: 0.7 }}
+        style={{ width: 480, padding: 8, border: '1px solid #ccc', borderRadius: 4, fontSize: 16 }}
+      />
+      <div style={{ marginTop: 12, fontSize: 12, color: '#666' }}>value: {JSON.stringify(v)}</div>
+    </div>
+  );
+}
+
 function MobileTapAcceptTextbox() {
   const [v, setV] = useState('hello');
   return (
@@ -81,6 +101,9 @@ type Story = StoryObj<typeof ControlledTextbox>;
 export const Default: Story = { args: {} };
 export const Streaming: Story = { args: { stream: true } };
 export const WithContext: Story = { args: { context: 'user is writing a friendly greeting' } };
+export const CustomGhostStyling: StoryObj<typeof CustomStyledGhostTextbox> = {
+  render: () => <CustomStyledGhostTextbox />,
+};
 export const MobileTapAccept: StoryObj<typeof MobileTapAcceptTextbox> = {
   render: () => <MobileTapAcceptTextbox />,
 };

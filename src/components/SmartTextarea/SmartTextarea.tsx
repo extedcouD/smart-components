@@ -5,6 +5,7 @@ import {
   useLayoutEffect,
   useMemo,
   useRef,
+  type CSSProperties,
   type ReactNode,
   type TextareaHTMLAttributes,
 } from 'react';
@@ -62,6 +63,13 @@ export interface SmartTextareaProps extends NativeTextareaProps {
   autoResize?: boolean;
   /** Render-prop override for the ghost text. */
   renderGhost?: (suggestion: string) => ReactNode;
+  /** Class name applied to the ghost text span. Use this for the common
+   *  "just recolor the ghost" case; reach for `renderGhost` only when you
+   *  need a richer ReactNode. */
+  ghostClassName?: string;
+  /** Inline style applied to the ghost text span. Overrides defaults
+   *  (default is `opacity: 0.4` inheriting the textarea's `color`). */
+  ghostStyle?: CSSProperties;
   /** Class name applied to the outer wrapper. */
   wrapperClassName?: string;
   /** Called when the suggestion is accepted. */
@@ -89,6 +97,8 @@ export const SmartTextarea = forwardRef<SmartTextareaHandle, SmartTextareaProps>
       stop,
       autoResize = false,
       renderGhost,
+      ghostClassName,
+      ghostStyle,
       wrapperClassName,
       onAccept,
       onGhostChange,
@@ -173,6 +183,8 @@ export const SmartTextarea = forwardRef<SmartTextareaHandle, SmartTextareaProps>
           visible={gate.ghostVisible}
           onAccept={gate.accept}
           renderGhost={renderGhost}
+          ghostClassName={ghostClassName}
+          ghostStyle={ghostStyle}
           testId="smart-textarea-ghost"
         />
       </span>

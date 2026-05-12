@@ -1,4 +1,11 @@
-import { useEffect, useLayoutEffect, useRef, type ReactNode, type RefObject } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  type CSSProperties,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 import styles from './GhostOverlay.module.css';
 
 /** CSS properties the mirror copies from the target so its text lays out identically. */
@@ -54,6 +61,10 @@ export interface GhostOverlayProps {
   onAccept?: () => void;
   /** Optional render-prop for the ghost. */
   renderGhost?: (suggestion: string) => ReactNode;
+  /** Class name applied to the ghost span. Composed with default styles. */
+  ghostClassName?: string;
+  /** Inline style applied to the ghost span. Overrides default styles (e.g. opacity). */
+  ghostStyle?: CSSProperties;
   /** data-testid forwarded to the ghost span. */
   testId?: string;
 }
@@ -80,6 +91,8 @@ export function GhostOverlay({
   visible,
   onAccept,
   renderGhost,
+  ghostClassName,
+  ghostStyle,
   testId,
 }: GhostOverlayProps) {
   const mirrorRef = useRef<HTMLDivElement>(null);
@@ -130,9 +143,11 @@ export function GhostOverlay({
         className={[
           visible ? styles.ghost : styles.ghostHidden,
           tappable ? styles.ghostTappable : '',
+          ghostClassName,
         ]
           .filter(Boolean)
           .join(' ')}
+        style={ghostStyle}
         data-testid={testId}
         // preventDefault on pointerdown keeps focus on the input (and the
         // mobile keyboard up); the click handler commits the ghost.

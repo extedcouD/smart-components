@@ -16,3 +16,16 @@ export type {
   EmbedRequest,
   EmbedResponse,
 } from './types';
+export type {
+  ChatRole,
+  ChatImageSource,
+  ChatContentBlock,
+  ChatMessage,
+  SmartTool,
+  ChatToolChoice,
+  ChatRequest,
+  ChatResponse,
+  ChatStreamChunk,
+  ChatFinishReason,
+  ChatUsage,
+} from './chat-types';

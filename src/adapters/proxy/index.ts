@@ -7,6 +7,8 @@ import {
   type SmartCapability,
   type SmartClient,
 } from '../../provider/types';
+import type { ChatRequest, ChatResponse, ChatStreamChunk } from '../../provider/chat-types';
+import { uuid } from '../../utils/uuid';
 
 export interface ProxyClientOptions {
   /** Endpoint URL the adapter POSTs to. */
@@ -42,6 +44,61 @@ async function defaultTransformResponse(_capability: SmartCapability, res: Respo
     throw new Error(`[smart-components/proxy] ${res.status} ${res.statusText}`);
   }
   return res.json();
+}
+
+async function* readChatSseStream(
+  res: Response,
+  signal?: AbortSignal,
+): AsyncIterable<ChatStreamChunk> {
+  if (!res.body) throw new Error('[smart-components/proxy] chat stream has no body');
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  const fallbackMsgId = uuid();
+  let messageStarted = false;
+  try {
+    while (true) {
+      if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let nl: number;
+      while ((nl = buffer.indexOf('\n')) !== -1) {
+        const line = buffer.slice(0, nl).trim();
+        buffer = buffer.slice(nl + 1);
+        if (!line || line.startsWith(':')) continue;
+        const data = line.startsWith('data:') ? line.slice(5).trim() : line;
+        if (data === '[DONE]') return;
+        try {
+          const parsed = JSON.parse(data) as ChatStreamChunk | { delta?: string; text?: string };
+          if ('type' in parsed && typeof parsed.type === 'string') {
+            if (parsed.type === 'message-start') messageStarted = true;
+            yield parsed as ChatStreamChunk;
+          } else {
+            // Bare {delta} / {text} envelope — wrap as text-delta.
+            const text = (parsed as { delta?: string; text?: string }).delta
+              ?? (parsed as { delta?: string; text?: string }).text;
+            if (text) {
+              if (!messageStarted) {
+                messageStarted = true;
+                yield { type: 'message-start', messageId: fallbackMsgId };
+              }
+              yield { type: 'text-delta', messageId: fallbackMsgId, text };
+            }
+          }
+        } catch {
+          // Not JSON — treat raw line as text delta.
+          if (!messageStarted) {
+            messageStarted = true;
+            yield { type: 'message-start', messageId: fallbackMsgId };
+          }
+          yield { type: 'text-delta', messageId: fallbackMsgId, text: data };
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
 }
 
 async function* readSseStream(res: Response, signal?: AbortSignal): AsyncIterable<string> {
@@ -87,7 +144,10 @@ export function createProxyClient(opts: ProxyClientOptions): SmartClient {
     ...opts.headers,
   };
 
-  async function post(capability: SmartCapability, req: CompleteRequest | EmbedRequest): Promise<Response> {
+  async function post(
+    capability: SmartCapability,
+    req: CompleteRequest | EmbedRequest | ChatRequest,
+  ): Promise<Response> {
     return fetch(opts.url, {
       method: 'POST',
       headers,
@@ -130,6 +190,28 @@ export function createProxyClient(opts: ProxyClientOptions): SmartClient {
         const res = await post('embed', req);
         const parsed = (await transformResponse('embed', res)) as { vectors?: number[][] } | number[][];
         return Array.isArray(parsed) ? parsed : (parsed.vectors ?? []);
+      },
+    });
+  }
+
+  if (caps.has('chat')) {
+    Object.assign(client, {
+      async chat(req: ChatRequest): Promise<ChatResponse> {
+        const res = await post('chat', req);
+        const parsed = (await transformResponse('chat', res)) as ChatResponse;
+        return parsed;
+      },
+    });
+  }
+
+  if (caps.has('chatStream')) {
+    Object.assign(client, {
+      async *chatStream(req: ChatRequest): AsyncIterable<ChatStreamChunk> {
+        const res = await post('chatStream', req);
+        if (!res.ok) {
+          throw new Error(`[smart-components/proxy] ${res.status} ${res.statusText}`);
+        }
+        yield* readChatSseStream(res, req.signal);
       },
     });
   }

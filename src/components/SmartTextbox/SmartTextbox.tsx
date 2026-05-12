@@ -3,6 +3,7 @@ import {
   useEffect,
   useImperativeHandle,
   useRef,
+  type CSSProperties,
   type InputHTMLAttributes,
   type ReactNode,
 } from 'react';
@@ -56,6 +57,13 @@ export interface SmartTextboxProps extends NativeInputProps {
   maxTokens?: number;
   /** Render-prop override for the ghost text. */
   renderGhost?: (suggestion: string) => ReactNode;
+  /** Class name applied to the ghost text span. Use this for the common
+   *  "just recolor the ghost" case; reach for `renderGhost` only when you
+   *  need a richer ReactNode. */
+  ghostClassName?: string;
+  /** Inline style applied to the ghost text span. Overrides defaults
+   *  (default is `opacity: 0.4` inheriting the input's `color`). */
+  ghostStyle?: CSSProperties;
   /** Class name applied to the outer wrapper. */
   wrapperClassName?: string;
   /** Called when the suggestion is accepted. */
@@ -78,6 +86,8 @@ export const SmartTextbox = forwardRef<SmartTextboxHandle, SmartTextboxProps>(fu
     dismissKey = 'Escape',
     maxTokens = 32,
     renderGhost,
+    ghostClassName,
+    ghostStyle,
     wrapperClassName,
     onAccept,
     onGhostChange,
@@ -151,6 +161,8 @@ export const SmartTextbox = forwardRef<SmartTextboxHandle, SmartTextboxProps>(fu
         visible={gate.ghostVisible}
         onAccept={gate.accept}
         renderGhost={renderGhost}
+        ghostClassName={ghostClassName}
+        ghostStyle={ghostStyle}
         testId="smart-textbox-ghost"
       />
     </span>

@@ -180,6 +180,33 @@ describe('SmartTextbox', () => {
     expect(screen.getByTestId('val')).toHaveTextContent('hello world');
   });
 
+  it('applies ghostClassName and ghostStyle to the ghost span', async () => {
+    function H() {
+      const [v, setV] = useState('hello');
+      return (
+        <SmartProvider client={createMockClient({ complete: () => ' world' })}>
+          <SmartTextbox
+            value={v}
+            onChange={setV}
+            debounceMs={0}
+            minChars={3}
+            ghostClassName="my-ghost"
+            ghostStyle={{ color: 'rgb(255, 0, 0)', fontStyle: 'italic' }}
+            data-testid="input"
+          />
+        </SmartProvider>
+      );
+    }
+    render(<H />);
+    focusAtEnd(screen.getByTestId('input') as HTMLInputElement);
+    await waitFor(() =>
+      expect(screen.getByTestId('smart-textbox-ghost')).toHaveTextContent(/world/),
+    );
+    const ghost = screen.getByTestId('smart-textbox-ghost');
+    expect(ghost).toHaveClass('my-ghost');
+    expect(ghost).toHaveStyle({ color: 'rgb(255, 0, 0)', fontStyle: 'italic' });
+  });
+
   it('does not fetch below minChars', async () => {
     const complete = vi.fn().mockResolvedValue('xx');
     const client = createMockClient({ complete });

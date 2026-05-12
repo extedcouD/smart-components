@@ -15,6 +15,17 @@ export type {
   EmbedResponse,
   SmartProviderProps,
   SmartContextValue,
+  ChatRole,
+  ChatImageSource,
+  ChatContentBlock,
+  ChatMessage,
+  SmartTool,
+  ChatToolChoice,
+  ChatRequest,
+  ChatResponse,
+  ChatStreamChunk,
+  ChatFinishReason,
+  ChatUsage,
 } from './provider';
 
 export { SmartTextbox } from './components/SmartTextbox';
@@ -33,10 +44,19 @@ export type {
   SmartRewriteRenderArgs,
 } from './components/SmartRewrite';
 
+export { SmartChat, SmartChatComposer } from './components/SmartChat';
+export type {
+  SmartChatProps,
+  SmartChatHandle,
+  SmartChatComposerProps,
+  SmartChatComposerHandle,
+} from './components/SmartChat';
+
 export {
   useGhostCompletion,
   useSuggestionList,
   useRewrite,
+  useChat,
   useDebouncedValue,
   useLRU,
 } from './hooks';
@@ -50,5 +70,9 @@ export type {
   UseRewriteOptions,
   UseRewriteResult,
   RewriteStatus,
+  UseChatOptions,
+  UseChatResult,
+  ChatStatus,
+  PendingToolCall,
   LRU,
 } from './hooks';

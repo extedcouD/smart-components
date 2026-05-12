@@ -7,6 +7,13 @@ import {
   type SmartCapability,
   type SmartClient,
 } from '../../provider/types';
+import type {
+  ChatRequest,
+  ChatResponse,
+  ChatStreamChunk,
+  ChatMessage,
+} from '../../provider/chat-types';
+import { uuid } from '../../utils/uuid';
 
 export interface MockClientOptions {
   /** Function called for `complete` requests. */
@@ -15,6 +22,15 @@ export interface MockClientOptions {
   stream?: (req: CompleteRequest) => Iterable<string> | AsyncIterable<string>;
   /** Function called for `embed` requests. */
   embed?: (req: EmbedRequest) => number[][] | Promise<number[][]>;
+  /** Function called for `chat` requests. Return either a full ChatResponse
+   *  or a string (which is wrapped as a text-only assistant reply). */
+  chat?: (req: ChatRequest) => string | ChatResponse | Promise<string | ChatResponse>;
+  /** Function called for `chatStream` requests. Yield either pre-shaped
+   *  ChatStreamChunk events or plain strings (auto-wrapped as text-deltas
+   *  with synthesized message-start/finish). */
+  chatStream?: (
+    req: ChatRequest,
+  ) => Iterable<ChatStreamChunk | string> | AsyncIterable<ChatStreamChunk | string>;
   /** Artificial latency in ms applied to each call. */
   latencyMs?: number;
   /** Optional id (defaults to "mock"). */
@@ -48,6 +64,8 @@ export function createMockClient(opts: MockClientOptions = {}): SmartClient {
   if (opts.complete) caps.add('complete');
   if (opts.stream) caps.add('stream');
   if (opts.embed) caps.add('embed');
+  if (opts.chat) caps.add('chat');
+  if (opts.chatStream) caps.add('chatStream');
 
   const latency = opts.latencyMs ?? 0;
 
@@ -86,6 +104,62 @@ export function createMockClient(opts: MockClientOptions = {}): SmartClient {
       async embed(req: EmbedRequest): Promise<EmbedResponse> {
         await delay(latency, req.signal);
         return fn(req);
+      },
+    });
+  }
+
+  if (opts.chat) {
+    const fn = opts.chat;
+    Object.assign(client, {
+      async chat(req: ChatRequest): Promise<ChatResponse> {
+        await delay(latency, req.signal);
+        const result = await fn(req);
+        if (typeof result === 'string') {
+          const message: ChatMessage = {
+            id: uuid(),
+            role: 'assistant',
+            content: [{ type: 'text', text: result }],
+          };
+          return { message, finishReason: 'stop' };
+        }
+        return result;
+      },
+    });
+  }
+
+  if (opts.chatStream) {
+    const fn = opts.chatStream;
+    Object.assign(client, {
+      async *chatStream(req: ChatRequest): AsyncIterable<ChatStreamChunk> {
+        await delay(latency, req.signal);
+        const source = fn(req) as AsyncIterable<ChatStreamChunk | string> | Iterable<ChatStreamChunk | string>;
+        const messageId = uuid();
+        let startedStructured = false;
+        let startedWrapped = false;
+        let finishedStructured = false;
+
+        for await (const chunk of source as AsyncIterable<ChatStreamChunk | string>) {
+          if (req.signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+          if (typeof chunk === 'string') {
+            if (!startedWrapped) {
+              startedWrapped = true;
+              yield { type: 'message-start', messageId };
+            }
+            yield { type: 'text-delta', messageId, text: chunk };
+          } else {
+            startedStructured = true;
+            if (chunk.type === 'finish') finishedStructured = true;
+            yield chunk;
+          }
+        }
+        if (startedWrapped && !startedStructured) {
+          yield { type: 'finish', messageId, finishReason: 'stop' };
+        } else if (startedStructured && !finishedStructured) {
+          yield { type: 'finish', messageId, finishReason: 'stop' };
+        } else if (!startedWrapped && !startedStructured) {
+          yield { type: 'message-start', messageId };
+          yield { type: 'finish', messageId, finishReason: 'stop' };
+        }
       },
     });
   }

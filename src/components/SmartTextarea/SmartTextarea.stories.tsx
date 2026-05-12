@@ -56,6 +56,35 @@ function Controlled(props: {
   );
 }
 
+function CustomStyledGhostTextarea() {
+  const [v, setV] = useState('Hello world');
+  return (
+    <div style={{ font: '14px ui-sans-serif, system-ui' }}>
+      <p style={{ fontSize: 13, color: '#666', marginTop: 0 }}>
+        Ghost text recolored via <code>ghostStyle</code> — no <code>renderGhost</code> needed.
+      </p>
+      <SmartTextarea
+        value={v}
+        onChange={setV}
+        debounceMs={250}
+        minChars={3}
+        rows={6}
+        ghostStyle={{ color: '#0066cc', fontStyle: 'italic', opacity: 0.7 }}
+        style={{
+          width: 520,
+          padding: 10,
+          border: '1px solid #ccc',
+          borderRadius: 6,
+          lineHeight: 1.5,
+        }}
+      />
+      <div style={{ marginTop: 12, fontSize: 12, color: '#666', whiteSpace: 'pre-wrap' }}>
+        value: {JSON.stringify(v)}
+      </div>
+    </div>
+  );
+}
+
 const meta: Meta<typeof Controlled> = {
   title: 'Components/SmartTextarea',
   component: Controlled,
@@ -82,4 +111,7 @@ export const LongPrompt: Story = {
     initial:
       'Once upon a time in a faraway kingdom,\nthere lived a curious developer who loved\nbuilding small headless components that ',
   },
+};
+export const CustomGhostStyling: StoryObj<typeof CustomStyledGhostTextarea> = {
+  render: () => <CustomStyledGhostTextarea />,
 };
