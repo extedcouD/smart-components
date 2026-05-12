@@ -3,16 +3,26 @@
   inset: 0;
   pointer-events: none;
   overflow: hidden;
-  color: rgba(0, 0, 0, 0.35);
-  /* Box-model + text-layout properties (font, padding, border-width, white-space, etc.)
-     are copied at runtime from the target via getComputedStyle so the ghost lands
-     exactly where the next character would render. */
+  /* Color inherits from the consumer's text color so the ghost adapts to
+     light/dark themes. The .ghost span dims it via opacity. */
 }
 
 .ghost {
-  /* Inherits white-space from the mirror so wrapping matches the target. */
+  /* Muted relative to the consumer's text color; works in any theme. */
+  opacity: 0.4;
 }
 
 .ghostHidden {
   display: none;
+}
+
+/* Applied when a tap-to-accept handler is wired. Re-enables pointer events on
+   just the ghost text — the rest of the mirror stays pointer-events: none so
+   it never blocks taps on the underlying field. */
+.ghostTappable {
+  pointer-events: auto;
+  cursor: pointer;
+  /* Larger hit area than the visible glyph alone, especially helpful on touch. */
+  padding: 4px 2px;
+  margin: -4px -2px;
 }

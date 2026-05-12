@@ -1,11 +1,14 @@
 .root {
   position: relative;
   display: inline-block;
+  touch-action: manipulation;
 }
 
 .textarea {
   position: relative;
   background: transparent;
+  color: inherit;
+  -webkit-text-fill-color: currentColor;
   font: inherit;
   width: 100%;
   box-sizing: border-box;

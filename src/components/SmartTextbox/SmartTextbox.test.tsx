@@ -113,6 +113,73 @@ describe('SmartTextbox', () => {
     await waitFor(() => expect(screen.getByTestId('smart-textbox-ghost')).toHaveTextContent(/5/));
   });
 
+  it('tap-on-ghost still commits even if blur fires before click (Samsung Internet)', async () => {
+    const accepted = vi.fn();
+    function H() {
+      const [v, setV] = useState('hello');
+      return (
+        <SmartProvider client={createMockClient({ complete: () => ' world' })}>
+          <SmartTextbox
+            value={v}
+            onChange={setV}
+            onAccept={accepted}
+            debounceMs={0}
+            minChars={3}
+            data-testid="input"
+          />
+          <div data-testid="val">{v}</div>
+        </SmartProvider>
+      );
+    }
+    render(<H />);
+    const input = screen.getByTestId('input') as HTMLInputElement;
+    focusAtEnd(input);
+    await waitFor(() =>
+      expect(screen.getByTestId('smart-textbox-ghost')).toHaveTextContent(/world/),
+    );
+    // Simulate Samsung Internet: focus is stolen before click. The ghost
+    // becomes visually hidden (ghostVisible flips to false) but the underlying
+    // suggestion stays in state so the click handler can still commit.
+    const ghost = screen.getByTestId('smart-textbox-ghost');
+    fireEvent.pointerDown(ghost);
+    input.blur();
+    fireEvent.click(ghost);
+    expect(accepted).toHaveBeenCalledWith(' world', 'hello world');
+    expect(screen.getByTestId('val')).toHaveTextContent('hello world');
+  });
+
+  it('tapping the ghost itself accepts the suggestion (mobile path)', async () => {
+    const accepted = vi.fn();
+    function H() {
+      const [v, setV] = useState('hello');
+      return (
+        <SmartProvider client={createMockClient({ complete: () => ' world' })}>
+          <SmartTextbox
+            value={v}
+            onChange={setV}
+            onAccept={accepted}
+            debounceMs={0}
+            minChars={3}
+            data-testid="input"
+          />
+          <div data-testid="val">{v}</div>
+        </SmartProvider>
+      );
+    }
+    render(<H />);
+    focusAtEnd(screen.getByTestId('input') as HTMLInputElement);
+    await waitFor(() =>
+      expect(screen.getByTestId('smart-textbox-ghost')).toHaveTextContent(/world/),
+    );
+    // pointerdown.preventDefault keeps focus on the input (so the ghost survives),
+    // then click commits — this is what tapping the visible ghost does on a phone.
+    const ghost = screen.getByTestId('smart-textbox-ghost');
+    fireEvent.pointerDown(ghost);
+    fireEvent.click(ghost);
+    expect(accepted).toHaveBeenCalledWith(' world', 'hello world');
+    expect(screen.getByTestId('val')).toHaveTextContent('hello world');
+  });
+
   it('does not fetch below minChars', async () => {
     const complete = vi.fn().mockResolvedValue('xx');
     const client = createMockClient({ complete });

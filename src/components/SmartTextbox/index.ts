@@ -1,2 +1,2 @@
 export { SmartTextbox } from './SmartTextbox';
-export type { SmartTextboxProps } from './SmartTextbox';
+export type { SmartTextboxProps, SmartTextboxHandle } from './SmartTextbox';

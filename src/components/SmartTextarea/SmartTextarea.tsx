@@ -1,6 +1,10 @@
 import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
   useLayoutEffect,
   useMemo,
+  useRef,
   type ReactNode,
   type TextareaHTMLAttributes,
 } from 'react';
@@ -12,6 +16,19 @@ type NativeTextareaProps = Omit<
   TextareaHTMLAttributes<HTMLTextAreaElement>,
   'value' | 'onChange' | 'defaultValue'
 >;
+
+export interface SmartTextareaHandle {
+  /** Commit the current ghost (if any). Returns true if accepted. */
+  accept: () => boolean;
+  /** Discard the current ghost. */
+  dismiss: () => void;
+  /** Focus the underlying textarea. */
+  focus: () => void;
+  /** Blur the underlying textarea. */
+  blur: () => void;
+  /** The current ghost text, or '' if no ghost is visible. */
+  getSuggestion: () => string;
+}
 
 export interface SmartTextareaProps extends NativeTextareaProps {
   /** Current textarea value (controlled). */
@@ -30,7 +47,10 @@ export interface SmartTextareaProps extends NativeTextareaProps {
   disableAI?: boolean;
   /** Key that accepts the ghost suggestion. Default: 'ArrowRight'.
    *  Accept fires only when the caret is at the end of the value, so the key
-   *  retains its normal cursor-movement behavior elsewhere. */
+   *  retains its normal cursor-movement behavior elsewhere.
+   *  Note: ArrowRight doesn't exist on most soft keyboards — for mobile, use
+   *  the imperative `accept()` via ref. Do NOT use 'Enter' here; it'd hijack
+   *  the newline key. */
   acceptKey?: string;
   /** Key that dismisses the ghost suggestion. Default: 'Escape'. */
   dismissKey?: string;
@@ -46,38 +66,45 @@ export interface SmartTextareaProps extends NativeTextareaProps {
   wrapperClassName?: string;
   /** Called when the suggestion is accepted. */
   onAccept?: (accepted: string, finalValue: string) => void;
+  /** Called whenever the visible ghost changes ('' when no ghost). Use this
+   *  to render a tap-to-accept button on mobile. */
+  onGhostChange?: (suggestion: string) => void;
 }
 
 const DEFAULT_STOP = ['\n\n'];
 
-export function SmartTextarea({
-  value,
-  onChange,
-  context,
-  minChars = 3,
-  debounceMs = 300,
-  stream = false,
-  disableAI = false,
-  acceptKey = 'ArrowRight',
-  dismissKey = 'Escape',
-  maxTokens = 64,
-  stop,
-  autoResize = false,
-  renderGhost,
-  wrapperClassName,
-  onAccept,
-  className,
-  onKeyDown,
-  onFocus,
-  onBlur,
-  onSelect,
-  onChange: _legacyOnChange,
-  ...rest
-}: SmartTextareaProps) {
-  const effectiveStop = useMemo(() => stop ?? DEFAULT_STOP, [stop]);
+export const SmartTextarea = forwardRef<SmartTextareaHandle, SmartTextareaProps>(
+  function SmartTextarea(
+    {
+      value,
+      onChange,
+      context,
+      minChars = 3,
+      debounceMs = 300,
+      stream = false,
+      disableAI = false,
+      acceptKey = 'ArrowRight',
+      dismissKey = 'Escape',
+      maxTokens = 64,
+      stop,
+      autoResize = false,
+      renderGhost,
+      wrapperClassName,
+      onAccept,
+      onGhostChange,
+      className,
+      onKeyDown,
+      onFocus,
+      onBlur,
+      onSelect,
+      onChange: _legacyOnChange,
+      ...rest
+    },
+    forwardedRef,
+  ) {
+    const effectiveStop = useMemo(() => stop ?? DEFAULT_STOP, [stop]);
 
-  const { ref, suggestion, ghostVisible, buildKeyDown, buildFocus, buildBlur, buildSelect } =
-    useTextFieldGate<HTMLTextAreaElement>({
+    const gate = useTextFieldGate<HTMLTextAreaElement>({
       value,
       onChange,
       onAccept,
@@ -93,38 +120,62 @@ export function SmartTextarea({
       enabled: !disableAI,
     });
 
-  // Auto-resize: grow textarea to fit content.
-  useLayoutEffect(() => {
-    if (!autoResize) return;
-    const el = ref.current;
-    if (!el) return;
-    el.style.height = 'auto';
-    el.style.height = `${el.scrollHeight}px`;
-  }, [ref, autoResize, value, suggestion, ghostVisible]);
+    // Auto-resize: grow textarea to fit content.
+    useLayoutEffect(() => {
+      if (!autoResize) return;
+      const el = gate.ref.current;
+      if (!el) return;
+      el.style.height = 'auto';
+      el.style.height = `${el.scrollHeight}px`;
+    }, [gate.ref, autoResize, value, gate.suggestion, gate.ghostVisible]);
 
-  return (
-    <span className={[styles.root, wrapperClassName].filter(Boolean).join(' ')}>
-      <GhostOverlay
-        targetRef={ref}
-        value={value}
-        suggestion={suggestion}
-        visible={ghostVisible}
-        renderGhost={renderGhost}
-        testId="smart-textarea-ghost"
-      />
-      <textarea
-        ref={ref}
-        className={[styles.textarea, className].filter(Boolean).join(' ')}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={buildKeyDown(onKeyDown)}
-        onFocus={buildFocus(onFocus)}
-        onBlur={buildBlur(onBlur)}
-        onSelect={buildSelect(onSelect)}
-        aria-autocomplete="inline"
-        aria-haspopup="false"
-        {...rest}
-      />
-    </span>
-  );
-}
+    const onGhostChangeRef = useRef(onGhostChange);
+    onGhostChangeRef.current = onGhostChange;
+    useEffect(() => {
+      onGhostChangeRef.current?.(gate.ghostVisible ? gate.suggestion : '');
+    }, [gate.ghostVisible, gate.suggestion]);
+
+    useImperativeHandle(
+      forwardedRef,
+      () => ({
+        accept: gate.accept,
+        dismiss: gate.dismiss,
+        focus: () => gate.ref.current?.focus(),
+        blur: () => gate.ref.current?.blur(),
+        getSuggestion: () => (gate.ghostVisible ? gate.suggestion : ''),
+      }),
+      [gate],
+    );
+
+    return (
+      <span className={[styles.root, wrapperClassName].filter(Boolean).join(' ')}>
+        <textarea
+          ref={gate.ref}
+          className={[styles.textarea, className].filter(Boolean).join(' ')}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={gate.buildKeyDown(onKeyDown)}
+          onFocus={gate.buildFocus(onFocus)}
+          onBlur={gate.buildBlur(onBlur)}
+          onSelect={gate.buildSelect(onSelect)}
+          aria-autocomplete="inline"
+          aria-haspopup="false"
+          {...rest}
+        />
+        {/* Rendered AFTER the textarea so the mirror sits on top in stacking
+            order; taps on the visible ghost reach it instead of the textarea.
+            The mirror is pointer-events: none everywhere except the ghost span,
+            so taps elsewhere fall through to the textarea as normal. */}
+        <GhostOverlay
+          targetRef={gate.ref}
+          value={value}
+          suggestion={gate.suggestion}
+          visible={gate.ghostVisible}
+          onAccept={gate.accept}
+          renderGhost={renderGhost}
+          testId="smart-textarea-ghost"
+        />
+      </span>
+    );
+  },
+);

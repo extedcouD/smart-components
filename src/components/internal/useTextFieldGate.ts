@@ -33,6 +33,12 @@ export interface UseTextFieldGateResult<T extends AnyTextEl> {
   suggestion: string;
   /** Whether the ghost should be rendered. */
   ghostVisible: boolean;
+  /** Imperative accept — commits the current ghost and resets state.
+   *  Returns true if there was a ghost to accept, false otherwise.
+   *  Use this from a touch UI button when keyboard accept isn't available. */
+  accept: () => boolean;
+  /** Imperative dismiss — clears the current ghost. */
+  dismiss: () => void;
   /** Build a keydown handler that consumes accept/dismiss keys before
    *  delegating to the consumer's onKeyDown. */
   buildKeyDown: (consumer?: (e: KeyboardEvent<T>) => void) => (e: KeyboardEvent<T>) => void;
@@ -73,7 +79,20 @@ export function useTextFieldGate<T extends AnyTextEl>(
 
   const ref = useRef<T | null>(null);
   const [isFocused, setIsFocused] = useState(false);
+  // visualFocused mirrors isFocused but its `false` transition is delayed
+  // ~250ms. This keeps the ghost in the DOM (and tappable) long enough for
+  // a pending tap-on-ghost `click` to fire, even on browsers (Samsung
+  // Internet) that fire `blur` between `pointerdown` and `click` despite
+  // our preventDefault on pointerdown.
+  const [visualFocused, setVisualFocused] = useState(false);
+  const visualBlurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [caretAtEnd, setCaretAtEnd] = useState(true);
+
+  useEffect(() => {
+    return () => {
+      if (visualBlurTimerRef.current) clearTimeout(visualBlurTimerRef.current);
+    };
+  }, []);
 
   const { suggestion, status, dismiss } = useGhostCompletion({
     ...completionRest,
@@ -83,7 +102,7 @@ export function useTextFieldGate<T extends AnyTextEl>(
   });
 
   const ghostVisible =
-    isFocused &&
+    visualFocused &&
     caretAtEnd &&
     (status === 'ready' || (stream && status === 'loading')) &&
     suggestion.length > 0;
@@ -107,14 +126,25 @@ export function useTextFieldGate<T extends AnyTextEl>(
     updateCaretAtEnd();
   }, [updateCaretAtEnd, value]);
 
+  const accept = useCallback((): boolean => {
+    // Intentionally NOT gated on ghostVisible — only on whether there's a
+    // suggestion in state. This makes tap-on-ghost robust against browsers
+    // (e.g. Samsung Internet) that steal focus on pointerdown despite
+    // preventDefault, which would otherwise flip ghostVisible to false
+    // before the click handler runs.
+    if (!suggestion) return false;
+    const finalValue = value + suggestion;
+    onChange(finalValue);
+    onAccept?.(suggestion, finalValue);
+    dismiss();
+    return true;
+  }, [suggestion, value, onChange, onAccept, dismiss]);
+
   const buildKeyDown = useCallback(
     (consumer?: (e: KeyboardEvent<T>) => void) => (e: KeyboardEvent<T>) => {
       if (ghostVisible && e.key === acceptKey) {
         e.preventDefault();
-        const finalValue = value + suggestion;
-        onChange(finalValue);
-        onAccept?.(suggestion, finalValue);
-        dismiss();
+        accept();
         return;
       }
       if (ghostVisible && e.key === dismissKey) {
@@ -124,12 +154,17 @@ export function useTextFieldGate<T extends AnyTextEl>(
       }
       consumer?.(e);
     },
-    [ghostVisible, acceptKey, dismissKey, value, suggestion, onChange, onAccept, dismiss],
+    [ghostVisible, acceptKey, dismissKey, accept, dismiss],
   );
 
   const buildFocus = useCallback(
     (consumer?: (e: FocusEvent<T>) => void) => (e: FocusEvent<T>) => {
+      if (visualBlurTimerRef.current) {
+        clearTimeout(visualBlurTimerRef.current);
+        visualBlurTimerRef.current = null;
+      }
       setIsFocused(true);
+      setVisualFocused(true);
       updateCaretAtEnd();
       consumer?.(e);
     },
@@ -138,7 +173,15 @@ export function useTextFieldGate<T extends AnyTextEl>(
 
   const buildBlur = useCallback(
     (consumer?: (e: FocusEvent<T>) => void) => (e: FocusEvent<T>) => {
+      // Stop new fetches immediately…
       setIsFocused(false);
+      // …but keep the ghost in the DOM briefly so a Samsung-Internet-style
+      // blur-then-click sequence still lands the click on the ghost span.
+      if (visualBlurTimerRef.current) clearTimeout(visualBlurTimerRef.current);
+      visualBlurTimerRef.current = setTimeout(() => {
+        setVisualFocused(false);
+        visualBlurTimerRef.current = null;
+      }, 250);
       consumer?.(e);
     },
     [],
@@ -152,5 +195,15 @@ export function useTextFieldGate<T extends AnyTextEl>(
     [updateCaretAtEnd],
   );
 
-  return { ref, suggestion, ghostVisible, buildKeyDown, buildFocus, buildBlur, buildSelect };
+  return {
+    ref,
+    suggestion,
+    ghostVisible,
+    accept,
+    dismiss,
+    buildKeyDown,
+    buildFocus,
+    buildBlur,
+    buildSelect,
+  };
 }

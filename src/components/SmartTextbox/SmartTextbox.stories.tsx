@@ -22,7 +22,7 @@ const mockClient = createMockClient({
 function ControlledTextbox(props: { stream?: boolean; context?: string }) {
   const [v, setV] = useState('hello');
   return (
-    <div style={{ font: '14px monospace' }}>
+    <div style={{ font: '16px ui-sans-serif, system-ui' }}>
       <SmartTextbox
         value={v}
         onChange={setV}
@@ -30,7 +30,33 @@ function ControlledTextbox(props: { stream?: boolean; context?: string }) {
         stream={props.stream}
         debounceMs={250}
         minChars={3}
-        style={{ width: 480, padding: 8, border: '1px solid #ccc', borderRadius: 4 }}
+        style={{ width: 480, padding: 8, border: '1px solid #ccc', borderRadius: 4, fontSize: 16 }}
+      />
+      <div style={{ marginTop: 12, fontSize: 12, color: '#666' }}>value: {JSON.stringify(v)}</div>
+    </div>
+  );
+}
+
+function MobileTapAcceptTextbox() {
+  const [v, setV] = useState('hello');
+  return (
+    <div style={{ font: '16px ui-sans-serif, system-ui', maxWidth: 360 }}>
+      <p style={{ fontSize: 13, color: '#666', marginTop: 0 }}>
+        Type 3+ chars, then <strong>tap the grey suggestion</strong> to accept it. No extra button.
+      </p>
+      <SmartTextbox
+        value={v}
+        onChange={setV}
+        debounceMs={250}
+        minChars={3}
+        style={{
+          width: '100%',
+          padding: 12,
+          border: '1px solid #ccc',
+          borderRadius: 6,
+          fontSize: 16,
+          boxSizing: 'border-box',
+        }}
       />
       <div style={{ marginTop: 12, fontSize: 12, color: '#666' }}>value: {JSON.stringify(v)}</div>
     </div>
@@ -55,3 +81,6 @@ type Story = StoryObj<typeof ControlledTextbox>;
 export const Default: Story = { args: {} };
 export const Streaming: Story = { args: { stream: true } };
 export const WithContext: Story = { args: { context: 'user is writing a friendly greeting' } };
+export const MobileTapAccept: StoryObj<typeof MobileTapAcceptTextbox> = {
+  render: () => <MobileTapAcceptTextbox />,
+};

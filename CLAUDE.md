@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `@extedcoud/smart-components` — headless React components powered by an LLM. Minimal default DOM, consumers style everything. We ship *behavior + AI plumbing*, not styled widgets. Do NOT turn this into a styling library. No Button, no Card — every component must have AI-driven behavior to belong here.
 
-Current v0.1 components: `SmartTextbox` (ghost-text completion, Tab accepts) and `SmartSuggestion` (combobox dropdown).
+Current v0.2 components: `SmartTextbox` (single-line ghost), `SmartTextarea` (multiline ghost via mirror div), `SmartSuggestion` (combobox dropdown), `SmartRewrite` (headless rewrite primitive).
 
 ## Commands
 
@@ -87,10 +87,31 @@ Components are dumb. All AI logic lives in the hooks. **If you find yourself put
 - **`react-refresh/only-export-components`** — provider exports the component (`SmartProvider`) and context object from separate files. The hook lives in its own file (`useSmartClient.ts`). Don't merge them back; you'll re-break fast refresh.
 - **`react-hooks/refs`** — refuses the `if (!ref.current) ref.current = init()` lazy-init pattern. Use `useState(() => init())` instead (see `useLRU.ts`).
 
+## Mobile is a first-class target — not an afterthought
+
+**Every component must work on touch *and* desktop.** This is non-negotiable. When you add or change a component:
+
+1. **No keyboard-only interactions.** If accept/dismiss/navigation only fires from keys that don't exist on a soft keyboard (Tab, Escape, Arrow keys), the touch user is stuck. Either:
+   - Make the key configurable AND expose an imperative `accept()` / `dismiss()` via `forwardRef` + `useImperativeHandle`, so the consumer can wire a touch-friendly button; OR
+   - Provide a touch-native interaction that achieves the same thing.
+2. **IME composition.** Any text-field-like component must gate state machine behaviors on `e.isComposing` / `compositionstart`–`compositionend`. Mobile keyboards (Android Gboard especially) emit composition events for predictive text — ignoring them causes flicker and misfired accepts. The shared gating lives in `src/components/internal/useTextFieldGate.ts` — use it.
+3. **Pointer events, not mouse events.** For new selection / hover / drag interactions, use `onPointerDown` etc. — they unify mouse, touch, and pen. `onMouseEnter` is fine for purely decorative hover but never load-bearing.
+4. **Touch target ≥ 44px.** Don't ship default styles that produce smaller targets. If your component renders interactive DOM (lists, buttons), document the minimum and verify a default size that meets it.
+5. **`touch-action: manipulation`** on every interactive wrapper to skip the 300ms tap delay.
+6. **Test on touch.** A new component's PR is not ready until you've exercised it in:
+   - A browser device emulator at 375×667 (iPhone SE) and 390×844 (iPhone 14).
+   - At least one real touch device when possible (an Android phone or an iOS Safari session).
+   Both keyboard *and* touch paths must be in the test plan. Storybook viewport addon is the minimum bar.
+7. **Test in code too.** Add a test that exercises the touch path: `fireEvent.pointerDown`, composition events (`fireEvent.compositionStart` / `compositionEnd`), and any imperative-ref accept paths.
+8. **iOS 16px font rule.** We don't ship styles, but call out in JSDoc and in the component's story that `font-size < 16px` causes iOS zoom-on-focus.
+
+If a mobile concern is a *real* hard limitation (e.g. soft-keyboard overlap of a positioned dropdown), document it in the component's JSDoc and in README's "Mobile support" section — don't pretend it doesn't exist.
+
 ## What NOT to add
 
 - Styling abstractions, theme systems, design tokens — wrong library.
 - Components without AI behavior.
+- Components that only work on desktop. Mobile + desktop are equal first-class targets — see the "Mobile is a first-class target" section above.
 - A unified "anthropic + openai" router in core — that's an adapter's job. Core stays provider-agnostic.
 - Re-exports of adapters from the main barrel — kills tree-shaking.
 - Live API calls in tests or default Storybook stories.

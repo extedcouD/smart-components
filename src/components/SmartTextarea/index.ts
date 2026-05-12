@@ -1,2 +1,2 @@
 export { SmartTextarea } from './SmartTextarea';
-export type { SmartTextareaProps } from './SmartTextarea';
+export type { SmartTextareaProps, SmartTextareaHandle } from './SmartTextarea';

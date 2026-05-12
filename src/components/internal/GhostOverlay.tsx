@@ -8,12 +8,19 @@ const MIRROR_SYNC_PROPS = [
   'font-weight',
   'font-style',
   'font-variant',
+  'font-feature-settings',
+  'font-kerning',
+  'font-variant-ligatures',
+  'font-variant-numeric',
   'line-height',
   'letter-spacing',
   'word-spacing',
   'tab-size',
   'text-indent',
+  'text-align',
   'text-transform',
+  'text-rendering',
+  'direction',
   'white-space',
   'word-break',
   'overflow-wrap',
@@ -42,9 +49,12 @@ export interface GhostOverlayProps {
   /** Whether to paint the ghost. When false the mirror still mounts (so layout
    *  stays in sync) but the ghost span is hidden. */
   visible: boolean;
+  /** When provided, tapping/clicking the ghost itself accepts the suggestion.
+   *  This is the primary mobile accept gesture — no extra button needed. */
+  onAccept?: () => void;
   /** Optional render-prop for the ghost. */
   renderGhost?: (suggestion: string) => ReactNode;
-  /** data-testid forwarded to the mirror. */
+  /** data-testid forwarded to the ghost span. */
   testId?: string;
 }
 
@@ -52,18 +62,23 @@ export interface GhostOverlayProps {
  * Single ghost-overlay primitive used by both SmartTextbox and SmartTextarea.
  *
  * Renders an `aria-hidden` mirror that:
- *  - Mirrors the target's computed box model (padding, border-width, font, etc.)
- *    so text in the mirror lays out at the same coordinates as text in the target.
- *  - Contains an invisible copy of `value` followed by the (visible) ghost span,
- *    so the ghost naturally lands after the user's last character — even when
- *    the value wraps across lines.
- *  - Syncs scroll position with the target.
+ *  - Mirrors the target's computed box model so the ghost lands at the same
+ *    coordinates the next character would render at.
+ *  - Holds an invisible copy of `value` followed by the visible ghost span,
+ *    so the ghost naturally trails the user's last character.
+ *  - Syncs scroll with the target.
+ *
+ * When `onAccept` is wired, the ghost span itself becomes tappable: tap the
+ * suggestion to accept it. This is the primary mobile interaction — soft
+ * keyboards lack ArrowRight/Tab/Escape, so the visible suggestion has to be
+ * the accept target.
  */
 export function GhostOverlay({
   targetRef,
   value,
   suggestion,
   visible,
+  onAccept,
   renderGhost,
   testId,
 }: GhostOverlayProps) {
@@ -78,13 +93,17 @@ export function GhostOverlay({
     for (const prop of MIRROR_SYNC_PROPS) {
       m.style.setProperty(prop, cs.getPropertyValue(prop));
     }
-    // Mirror sits behind the target; its border occupies the same box space
-    // (via border-*-width above) but must not paint over the real border on top.
     m.style.borderColor = 'transparent';
+    // Browsers (e.g. iOS Safari, Samsung Internet in desktop mode) auto-inflate
+    // text in non-form elements via text-size-adjust. The textarea/input doesn't
+    // inflate, so the mirror would render at a different font size than the
+    // target — ghost lands at the wrong x/y. Disabling adjust on the mirror
+    // makes both render at the same logical size.
+    m.style.setProperty('-webkit-text-size-adjust', 'none');
+    m.style.setProperty('text-size-adjust', 'none');
   });
 
-  // Scroll sync: when target scrolls (textarea vertically, input horizontally),
-  // the mirror follows so the ghost stays anchored to the value's end.
+  // Scroll sync: keep the ghost anchored to the value's end as the target scrolls.
   useEffect(() => {
     const t = targetRef.current;
     const m = mirrorRef.current;
@@ -98,10 +117,28 @@ export function GhostOverlay({
     return () => t.removeEventListener('scroll', sync);
   }, [targetRef]);
 
+  const tappable = visible && !!onAccept;
+
   return (
     <div ref={mirrorRef} className={styles.mirror} aria-hidden="true">
       <span style={{ visibility: 'hidden' }}>{value}</span>
-      <span className={visible ? styles.ghost : styles.ghostHidden} data-testid={testId}>
+      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events --
+          The mirror is aria-hidden (decorative); screen-reader users accept via
+          the underlying input's keyboard `acceptKey`. The tap handler exists
+          solely so sighted touch users can commit the visible ghost. */}
+      <span
+        className={[
+          visible ? styles.ghost : styles.ghostHidden,
+          tappable ? styles.ghostTappable : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
+        data-testid={testId}
+        // preventDefault on pointerdown keeps focus on the input (and the
+        // mobile keyboard up); the click handler commits the ghost.
+        onPointerDown={tappable ? (e) => e.preventDefault() : undefined}
+        onClick={tappable ? onAccept : undefined}
+      >
         {visible ? (renderGhost ? renderGhost(suggestion) : suggestion) : null}
       </span>
     </div>

@@ -62,12 +62,20 @@ export function useGhostCompletion(opts: UseGhostCompletionOptions): UseGhostCom
   }, [debouncedValue]);
 
   useEffect(() => {
-    if (!enabled || debouncedValue.length < minChars) {
+    if (debouncedValue.length < minChars) {
       setSuggestion('');
       setStatus('idle');
       return;
     }
     if (dismissedForRef.current === debouncedValue) {
+      return;
+    }
+    if (!enabled) {
+      // Don't fetch when disabled, but DON'T clear the suggestion either —
+      // preserves it across a blur+tap race (observed in Samsung Internet,
+      // which doesn't honor pointerdown.preventDefault for blur prevention).
+      // Ghost is hidden visually via the consumer-side `ghostVisible` gate;
+      // the data stays alive so the tap-on-ghost click can still commit it.
       return;
     }
 

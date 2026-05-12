@@ -18,10 +18,10 @@ export type {
 } from './provider';
 
 export { SmartTextbox } from './components/SmartTextbox';
-export type { SmartTextboxProps } from './components/SmartTextbox';
+export type { SmartTextboxProps, SmartTextboxHandle } from './components/SmartTextbox';
 
 export { SmartTextarea } from './components/SmartTextarea';
-export type { SmartTextareaProps } from './components/SmartTextarea';
+export type { SmartTextareaProps, SmartTextareaHandle } from './components/SmartTextarea';
 
 export { SmartSuggestion } from './components/SmartSuggestion';
 export type { SmartSuggestionProps, SmartSuggestionRenderItemArgs } from './components/SmartSuggestion';
