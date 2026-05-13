@@ -4,6 +4,7 @@ description: Multi-line textarea variant of SmartParaphraseBox.
 ---
 
 import SmartParaphraseAreaDemo from '@/components/demos/SmartParaphraseAreaDemo';
+import SmartParaphraseAreaStylized from '@/components/demos/SmartParaphraseAreaStylized';
 import { SMART_PARAPHRASE_AREA_PROPS } from '@/components/mdx/props/smart-paraphrase-area';
 
 Textarea variant of [`SmartParaphraseBox`](./smart-paraphrase-box). Built-in sparkle button rewrites in place; `autoResize` grows to fit; streaming supported.
@@ -36,6 +37,30 @@ export function Example() {
     </SmartProvider>
   );
 }`}
+/>
+
+## Styled example
+
+A composer-card chrome with a floating circular sparkle button and a footer status row.
+
+<Preview
+  demo={<SmartParaphraseAreaStylized />}
+  source={`<div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+  <div className="flex items-center justify-between border-b bg-secondary/40 px-4 py-2 text-xs">
+    <span>Polish your reply</span>
+    <span className="rounded-full bg-violet-500/10 px-2 py-0.5 text-violet-600">✦ AI polish</span>
+  </div>
+  <SmartParaphraseArea
+    value={value}
+    onChange={setValue}
+    autoResize
+    rows={3}
+    instruction="Rewrite this text in a polished, professional tone."
+    wrapperClassName="relative block"
+    className="w-full resize-none bg-transparent px-4 py-3 pr-14 text-base outline-none"
+    buttonClassName="absolute bottom-3 right-3 h-11 w-11 rounded-full bg-gradient-to-br from-fuchsia-500 to-violet-500 text-white shadow-lg"
+  />
+</div>`}
 />
 
 ## Props

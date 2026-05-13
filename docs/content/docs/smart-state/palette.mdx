@@ -1,0 +1,79 @@
+---
+title: Color palette
+description: Mood brief → 5-color hex palette with a live preview surface.
+---
+
+import SmartStatePaletteSkeleton from '@/components/demos/SmartStatePaletteSkeleton';
+import SmartStatePaletteStylized from '@/components/demos/SmartStatePaletteStylized';
+
+The model returns a 5-key object of hex strings — `primary`, `secondary`, `accent`, `background`, `text`. Drop them straight onto `style` props, no parsing or theme system required.
+
+### Skeleton
+
+<Preview
+  demo={<SmartStatePaletteSkeleton />}
+  source={`const [mood, setMood] = useState('ocean sunrise');
+const [p, , ai] = useSmartState(
+  { primary: '', secondary: '', accent: '', background: '', text: '' },
+  'A 5-color hex palette (primary/secondary/accent/background/text)',
+);
+
+<input value={mood} onChange={(e) => setMood(e.target.value)} />
+<button onClick={() => ai.generate(mood)}>Generate palette</button>
+<pre>{JSON.stringify(p, null, 2)}</pre>`}
+/>
+
+### Stylized
+
+Color swatches, mood preset chips, and a live preview card that renders a headline + buttons in the generated palette.
+
+<Preview
+  demo={<SmartStatePaletteStylized />}
+  source={`const MOODS = ['ocean sunrise', 'sunset vibes', 'forest cabin', 'cyberpunk neon'];
+const ROLES = ['primary', 'secondary', 'accent', 'background', 'text'];
+
+<div className="rounded-2xl border bg-card p-5">
+  <input value={mood} onChange={(e) => setMood(e.target.value)} />
+  <button onClick={() => ai.generate(mood)}>🎨 Generate</button>
+
+  {MOODS.map((m) => <button key={m} onClick={() => setMood(m)}>{m}</button>)}
+
+  <div className="grid grid-cols-5 gap-2">
+    {ROLES.map((role) => (
+      <div key={role}>
+        <div className="aspect-square" style={{ background: p[role] }} />
+        <code>{p[role]}</code>
+      </div>
+    ))}
+  </div>
+
+  <div style={{ background: p.background, color: p.text }}>
+    <h4>Headline in your palette</h4>
+    <span style={{ background: p.primary }}>Primary</span>
+    <span style={{ background: p.secondary }}>Secondary</span>
+  </div>
+</div>`}
+/>
+
+## Why this shape is great for design tools
+
+You can pipe the palette object directly into CSS variables, Tailwind config, or a design-token store:
+
+```tsx
+const [palette, , ai] = useSmartState({
+  primary: '', secondary: '', accent: '', background: '', text: '',
+}, 'palette for a calm, productivity-focused app');
+
+useEffect(() => {
+  if (palette.primary) {
+    document.documentElement.style.setProperty('--brand-primary', palette.primary);
+    document.documentElement.style.setProperty('--brand-bg', palette.background);
+  }
+}, [palette]);
+```
+
+The shape stays stable across regenerations, so dependent UI doesn't break when the model is asked to re-mix.
+
+## Caching beats re-rolling
+
+Calling `ai.generate('ocean sunrise')` twice hits the LRU cache the second time — no network call, no re-render flash. To force a re-roll, vary the context: `ai.generate('ocean sunrise — variant 2')`.

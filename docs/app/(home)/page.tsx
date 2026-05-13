@@ -47,7 +47,7 @@ export default function HomePage() {
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
-              href={`${base}/docs/getting-started`}
+              href="/docs/getting-started"
               className="inline-flex h-11 items-center rounded-md bg-fd-foreground px-6 text-sm font-medium text-fd-background transition hover:opacity-90"
             >
               Get started
@@ -76,6 +76,32 @@ export default function HomePage() {
         </div>
       </section>
 
+      <section className="mx-auto max-w-5xl px-6 pb-16">
+        <Link
+          href="/docs/smart-state"
+          className="group block overflow-hidden rounded-2xl border border-fd-border bg-gradient-to-br from-indigo-500/10 via-fuchsia-500/10 to-cyan-500/10 p-8 transition hover:border-fd-foreground"
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <span className="inline-flex items-center gap-2 rounded-full border border-fd-border bg-fd-background/80 px-3 py-1 text-xs font-medium text-fd-muted-foreground">
+                <span className="size-1.5 rounded-full bg-fuchsia-500" />
+                New — headline hook
+              </span>
+              <h2 className="mt-3 text-2xl font-bold tracking-tight sm:text-3xl">
+                <span className="bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-cyan-500 bg-clip-text text-transparent">
+                  useSmartState
+                </span>{' '}
+                — typed AI state in one line
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm text-fd-muted-foreground sm:text-base">
+                useState with an `ai.generate()` action. Shape is read from your initial value, so the model is constrained to return matching JSON — no schemas, no parsers, no boilerplate.
+              </p>
+            </div>
+            <span className="hidden text-3xl transition group-hover:translate-x-1 sm:block">→</span>
+          </div>
+        </Link>
+      </section>
+
       <section className="mx-auto max-w-5xl px-6 pb-24">
         <h2 className="mb-8 text-center text-2xl font-semibold tracking-tight sm:text-3xl">
           What you get
@@ -102,7 +128,7 @@ export default function HomePage() {
             One provider, one component, one adapter. Five minutes start to finish.
           </p>
           <Link
-            href={`${base}/docs/getting-started`}
+            href="/docs/getting-started"
             className="mt-6 inline-flex h-11 items-center rounded-md bg-fd-foreground px-6 text-sm font-medium text-fd-background transition hover:opacity-90"
           >
             Read the guide

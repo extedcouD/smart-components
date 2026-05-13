@@ -1,0 +1,258 @@
+---
+title: Smart State ✦
+description: useState with an ai.generate() action — JSON-typed state any LLM can fill.
+---
+
+import SmartStateRandomSkeleton from '@/components/demos/SmartStateRandomSkeleton';
+import SmartStateRandomStylized from '@/components/demos/SmartStateRandomStylized';
+import SmartStateUserSkeleton from '@/components/demos/SmartStateUserSkeleton';
+import SmartStateUserStylized from '@/components/demos/SmartStateUserStylized';
+import SmartStateTagsSkeleton from '@/components/demos/SmartStateTagsSkeleton';
+import SmartStateTagsStylized from '@/components/demos/SmartStateTagsStylized';
+import SmartStateContextSkeleton from '@/components/demos/SmartStateContextSkeleton';
+import SmartStateContextStylized from '@/components/demos/SmartStateContextStylized';
+
+<div className="not-prose mb-8 overflow-hidden rounded-2xl border border-fd-border bg-gradient-to-br from-indigo-500/10 via-fuchsia-500/10 to-cyan-500/10 p-6">
+  <span className="inline-flex items-center gap-2 rounded-full border border-fd-border bg-fd-background/80 px-3 py-1 text-xs font-medium text-fd-muted-foreground">
+    <span className="size-1.5 rounded-full bg-fuchsia-500" />
+    Headline hook
+  </span>
+  <h1 className="mt-3 text-3xl font-bold tracking-tight">`useSmartState` — typed AI state, in one line.</h1>
+  <p className="mt-3 max-w-2xl text-fd-muted-foreground">A drop-in <code>useState</code> that adds an <code>ai.generate(context?)</code> action. The runtime shape is read from your initial value, so the model is constrained to return JSON that matches — no JSON schemas, no parsers, no boilerplate.</p>
+  <pre className="mt-4 overflow-x-auto rounded-lg border border-fd-border bg-fd-background/80 p-4 text-sm"><code>{`const [user, setUser, ai] = useSmartState(
+  { name: '', age: 0, bio: '' },
+  'a fictitious cyberpunk character',
+);
+
+ai.generate();        // → { name: 'Kael-9', age: 28, bio: '…' }
+setUser({ ... });     // still works — full useState semantics`}</code></pre>
+</div>
+
+<Callout type="info">
+  Every example below ships in two flavors — a **Skeleton** (bare API, unstyled) and a **Stylized** version using Tailwind. The hook is the same; only the wrapping markup changes. More advanced use cases live on their own pages — [form autofill](./smart-state/form-autofill), [extract from text](./smart-state/extract), and [color palette](./smart-state/palette).
+</Callout>
+
+## Why it's different
+
+<div className="not-prose my-6 grid gap-3 sm:grid-cols-2">
+  <div className="rounded-xl border border-fd-border bg-fd-card p-4">
+    <div className="text-xs font-medium uppercase tracking-wider text-fd-muted-foreground">Shape-first</div>
+    <p className="mt-2 text-sm">Seed an initial value; the prompt + JSON parser are derived automatically.</p>
+  </div>
+  <div className="rounded-xl border border-fd-border bg-fd-card p-4">
+    <div className="text-xs font-medium uppercase tracking-wider text-fd-muted-foreground">Cancel-on-edit</div>
+    <p className="mt-2 text-sm">If the user calls `setValue` mid-generate, the in-flight request is aborted. Manual intent always wins.</p>
+  </div>
+  <div className="rounded-xl border border-fd-border bg-fd-card p-4">
+    <div className="text-xs font-medium uppercase tracking-wider text-fd-muted-foreground">Built-in cache</div>
+    <p className="mt-2 text-sm">LRU(16) keyed by `(shape, context)` — repeated generates with the same context are free.</p>
+  </div>
+  <div className="rounded-xl border border-fd-border bg-fd-card p-4">
+    <div className="text-xs font-medium uppercase tracking-wider text-fd-muted-foreground">JS-compatible</div>
+    <p className="mt-2 text-sm">No generics required. The runtime shape comes from the seed, so plain JS callers get the same behavior.</p>
+  </div>
+</div>
+
+## 1. Primitive — random number
+
+The simplest case: a `number` initial value plus a context string.
+
+### Skeleton
+
+<Preview
+  demo={<SmartStateRandomSkeleton />}
+  source={`import { SmartProvider, useSmartState } from '@extedcoud/smart-components';
+import { createMockClient } from '@extedcoud/smart-components/adapters/mock';
+
+const client = createMockClient({
+  complete: async () => String(Math.floor(Math.random() * 100) + 1),
+});
+
+function Demo() {
+  const [n, setN, ai] = useSmartState(0, 'a random integer between 1 and 100');
+  return (
+    <div>
+      <button onClick={() => ai.generate()} disabled={ai.status === 'loading'}>
+        {ai.status === 'loading' ? 'Generating…' : 'Generate'}
+      </button>
+      <button onClick={() => setN(0)}>Reset</button>
+      <pre>n = {n}</pre>
+    </div>
+  );
+}
+
+export default function Example() {
+  return <SmartProvider client={client}><Demo /></SmartProvider>;
+}`}
+/>
+
+### Stylized
+
+A lucky-number card with gradient text and a soft glow.
+
+<Preview
+  demo={<SmartStateRandomStylized />}
+  source={`const [n, setN, ai] = useSmartState(0, 'a random integer between 1 and 100');
+const loading = ai.status === 'loading';
+
+<div className="rounded-2xl border bg-gradient-to-br from-indigo-500/10 via-fuchsia-500/10 to-cyan-500/10 p-8">
+  <p className="text-xs uppercase tracking-[0.18em] text-muted">Lucky number</p>
+  <div className={\`mt-3 bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-cyan-500 bg-clip-text text-7xl font-bold text-transparent \${loading ? 'animate-pulse' : ''}\`}>
+    {String(n).padStart(2, '0')}
+  </div>
+  <button onClick={() => ai.generate()} disabled={loading} className="mt-6 rounded-full bg-foreground px-5 py-2 text-background">
+    {loading ? 'Rolling…' : 'Roll the dice'}
+  </button>
+</div>`}
+/>
+
+## 2. Object — generated profile
+
+Pass a fully-seeded object to let the hook introspect the shape from `initial`.
+
+### Skeleton
+
+<Preview
+  demo={<SmartStateUserSkeleton />}
+  source={`const [user, setUser, ai] = useSmartState(
+  { name: '', age: 0, bio: '' },
+  'a fictitious cyberpunk character',
+);
+
+<button onClick={() => ai.generate()}>Roll a new user</button>
+<pre>{JSON.stringify(user, null, 2)}</pre>`}
+/>
+
+### Stylized
+
+A profile card with avatar initials, gradient banner, and a loading spinner.
+
+<Preview
+  demo={<SmartStateUserStylized />}
+  source={`<div className="overflow-hidden rounded-2xl border bg-card">
+  <div className="relative h-24 bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500">
+    <div className="absolute inset-x-0 -bottom-10 flex justify-center">
+      <div className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-card bg-background text-xl font-bold">
+        {empty ? '✦' : initials(user.name)}
+      </div>
+    </div>
+  </div>
+  <div className="px-6 pb-6 pt-12 text-center">
+    <h3 className="text-lg font-semibold">{user.name}</h3>
+    <p className="text-xs uppercase text-muted">Age {user.age}</p>
+    <p className="mt-3 text-sm text-muted">{user.bio}</p>
+    <button onClick={() => ai.generate()} className="mt-5 rounded-full bg-gradient-to-r from-indigo-500 to-fuchsia-500 px-5 py-2 text-white">
+      ✦ Generate
+    </button>
+  </div>
+</div>`}
+/>
+
+## 3. Array — generated tags (with `options.shape`)
+
+When `initial` is empty (`[]`, `null`, `undefined`), pass `options.shape` so the hook knows what to ask for.
+
+### Skeleton
+
+<Preview
+  demo={<SmartStateTagsSkeleton />}
+  source={`const [tags, , ai] = useSmartState<string[]>([], 'tags for a sci-fi blog post', {
+  shape: { type: 'array', item: 'string' },
+});
+
+<button onClick={() => ai.generate()}>Generate tags</button>
+<pre>{JSON.stringify(tags)}</pre>`}
+/>
+
+### Stylized
+
+A category switcher feeding a per-call context override, rendering tags as gradient pills.
+
+<Preview
+  demo={<SmartStateTagsStylized />}
+  source={`const CATEGORIES = [
+  { key: 'scifi', label: '🛸 Sci-fi blog post', context: 'tags for a sci-fi blog post' },
+  { key: 'recipe', label: '🍳 Weeknight recipe', context: 'tags for a weeknight recipe post' },
+  { key: 'travel', label: '🌍 Travel guide', context: 'tags for a travel guide article' },
+];
+
+const [category, setCategory] = useState(CATEGORIES[0]);
+const [tags, , ai] = useSmartState<string[]>([], category.context, {
+  shape: { type: 'array', item: 'string' },
+});
+
+<div>
+  {CATEGORIES.map((c) => <button key={c.key} onClick={() => setCategory(c)}>{c.label}</button>)}
+</div>
+<div>
+  {tags.map((t) => <span className="rounded-full bg-emerald-500/15 px-3 py-1">#{t}</span>)}
+</div>
+<button onClick={() => ai.generate(category.context)}>Generate tags</button>`}
+/>
+
+## 4. Per-call context override
+
+`ai.generate(contextOverride)` replaces the default context for one call — useful when the prompt is user-driven.
+
+### Skeleton
+
+<Preview
+  demo={<SmartStateContextSkeleton />}
+  source={`const [user, , ai] = useSmartState({ name: '', age: 0, bio: '' });
+const [prompt, setPrompt] = useState('a brave wizard');
+
+<input value={prompt} onChange={(e) => setPrompt(e.target.value)} />
+<button onClick={() => ai.generate(prompt)}>Generate</button>
+<pre>{JSON.stringify(user, null, 2)}</pre>`}
+/>
+
+### Stylized
+
+A character-builder card with quick-pick preset chips and a soft amber/rose result panel.
+
+<Preview
+  demo={<SmartStateContextStylized />}
+  source={`const PRESETS = [
+  'a stoic cyberpunk netrunner',
+  'a brave wizard from a forgotten realm',
+  'a retired space pirate now running a noodle shop',
+];
+
+const [user, , ai] = useSmartState({ name: '', age: 0, bio: '' });
+const [prompt, setPrompt] = useState(PRESETS[0]);
+
+<input value={prompt} onChange={(e) => setPrompt(e.target.value)} />
+<button onClick={() => ai.generate(prompt)}>✦ Generate</button>
+
+{PRESETS.map((p) => (
+  <button key={p} onClick={() => setPrompt(p)}>{p}</button>
+))}
+
+<div className="rounded-xl bg-gradient-to-br from-amber-500/5 to-rose-500/5 p-4">
+  <h4>{user.name}</h4>
+  <span>Age {user.age}</span>
+  <p>{user.bio}</p>
+</div>`}
+/>
+
+## Where next
+
+<div className="not-prose my-6 grid gap-3 sm:grid-cols-3">
+  <a href="./smart-state/form-autofill" className="block rounded-xl border border-fd-border bg-fd-card p-4 transition hover:border-fd-foreground">
+    <div className="text-2xl">📝</div>
+    <div className="mt-2 text-sm font-semibold">Form autofill</div>
+    <p className="mt-1 text-xs text-fd-muted-foreground">Type a brief → fill a typed event form.</p>
+  </a>
+  <a href="./smart-state/extract" className="block rounded-xl border border-fd-border bg-fd-card p-4 transition hover:border-fd-foreground">
+    <div className="text-2xl">🔍</div>
+    <div className="mt-2 text-sm font-semibold">Extract from text</div>
+    <p className="mt-1 text-xs text-fd-muted-foreground">Paste raw notes → structured summary + action items.</p>
+  </a>
+  <a href="./smart-state/palette" className="block rounded-xl border border-fd-border bg-fd-card p-4 transition hover:border-fd-foreground">
+    <div className="text-2xl">🎨</div>
+    <div className="mt-2 text-sm font-semibold">Color palette</div>
+    <p className="mt-1 text-xs text-fd-muted-foreground">Mood brief → 5-color hex palette with live preview.</p>
+  </a>
+</div>
+
+Full API reference: see [`useSmartState` API](./smart-state/api).

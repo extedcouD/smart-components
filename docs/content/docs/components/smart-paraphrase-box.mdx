@@ -4,6 +4,7 @@ description: Single-line input with a built-in sparkle button that paraphrases o
 ---
 
 import SmartParaphraseBoxDemo from '@/components/demos/SmartParaphraseBoxDemo';
+import SmartParaphraseBoxStylized from '@/components/demos/SmartParaphraseBoxStylized';
 import { SMART_PARAPHRASE_BOX_PROPS } from '@/components/mdx/props/smart-paraphrase-box';
 
 Ready-made input that wraps [`SmartRewrite`](./smart-rewrite) with a paraphrase button. Tap the button to rewrite in place. Auto-accepts when complete (configurable via `onRewriteAccept`).
@@ -32,6 +33,26 @@ export function Example() {
     </SmartProvider>
   );
 }`}
+/>
+
+## Styled example
+
+A pill input with a gradient border and a circular violet→fuchsia sparkle button.
+
+<Preview
+  demo={<SmartParaphraseBoxStylized />}
+  source={`<div className="rounded-2xl bg-gradient-to-r from-fuchsia-500 via-violet-500 to-indigo-500 p-[1.5px]">
+  <div className="rounded-[14px] bg-card">
+    <SmartParaphraseBox
+      value={value}
+      onChange={setValue}
+      instruction="Rewrite this text in a polished, professional tone. Keep the same meaning."
+      wrapperClassName="flex items-center gap-2 px-3 py-2"
+      className="flex-1 bg-transparent text-base outline-none"
+      buttonClassName="inline-flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-500 to-violet-500 text-white shadow"
+    />
+  </div>
+</div>`}
 />
 
 ## Custom button

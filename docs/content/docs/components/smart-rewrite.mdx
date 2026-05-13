@@ -4,6 +4,7 @@ description: Headless rewrite primitive (render-prop). Built-in presets, streami
 ---
 
 import SmartRewriteDemo from '@/components/demos/SmartRewriteDemo';
+import SmartRewriteStylized from '@/components/demos/SmartRewriteStylized';
 import { SMART_REWRITE_PROPS } from '@/components/mdx/props/smart-rewrite';
 
 Render-prop-only primitive that drives rewrite state for any text. Built-in presets: **Shorter / Formal / Casual / Fix grammar**. Renders no DOM of its own — you choose how to surface the buttons, preview, and accept/reject UX.
@@ -45,6 +46,40 @@ export function Example() {
     </SmartProvider>
   );
 }`}
+/>
+
+## Styled example
+
+Preset chips with emoji icons, a tinted "rewritten" panel, and big accept/reject buttons.
+
+<Preview
+  demo={<SmartRewriteStylized />}
+  source={`<SmartRewrite value={value} onChange={setValue}>
+  {({ presets, run, status, rewrite, accept, reject }) => {
+    const loading = status === 'loading';
+    const ready = status === 'ready';
+    return (
+      <>
+        <textarea
+          value={loading || ready ? rewrite || value : value}
+          readOnly={loading || ready}
+          className={ready ? 'bg-gradient-to-br from-emerald-500/5 to-teal-500/5' : ''}
+        />
+        {!ready && presets.map((p) => (
+          <button key={p.label} onClick={() => run(p.instruction)}>
+            {ICONS[p.label]} {p.label}
+          </button>
+        ))}
+        {ready && (
+          <>
+            <button onClick={accept}>✓ Accept</button>
+            <button onClick={reject}>✕ Reject</button>
+          </>
+        )}
+      </>
+    );
+  }}
+</SmartRewrite>`}
 />
 
 ## Custom presets

@@ -4,6 +4,7 @@ description: Combobox with AI-generated dropdown suggestions, keyboard nav, and 
 ---
 
 import SmartSuggestionDemo from '@/components/demos/SmartSuggestionDemo';
+import SmartSuggestionStylized from '@/components/demos/SmartSuggestionStylized';
 import { SMART_SUGGESTION_PROPS } from '@/components/mdx/props/smart-suggestion';
 
 An input + listbox combobox that streams suggestions from your `SmartClient`. Arrow keys to navigate, `Enter` to pick, `Esc` to close. Implements the [ARIA 1.2 combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/).
@@ -33,6 +34,39 @@ export function Example() {
     </SmartProvider>
   );
 }`}
+/>
+
+## Styled example — command palette
+
+A ⌘K-style command palette with icons, kbd hints, gradient selection, and a status footer.
+
+<Preview
+  demo={<SmartSuggestionStylized />}
+  source={`<div className="overflow-hidden rounded-xl border bg-card shadow-xl">
+  <div className="flex items-center gap-2 border-b px-3 py-2">
+    <span>⌘</span>
+    <SmartSuggestion
+      value={value}
+      onChange={setValue}
+      placeholder="Type a command…"
+      wrapperClassName="relative flex-1"
+      listClassName="absolute z-10 mt-2 max-h-72 overflow-y-auto rounded-lg border bg-card p-1 shadow-xl"
+      itemClassName="flex items-center gap-3 rounded-md px-3 py-2 text-sm aria-selected:bg-gradient-to-r aria-selected:from-indigo-500/15 aria-selected:to-fuchsia-500/15 cursor-pointer"
+      renderItem={(item, { active }) => (
+        <>
+          <span className="text-lg">{iconFor(item)}</span>
+          <span className="flex-1">{item}</span>
+          {active && <kbd className="rounded border px-1.5 py-0.5 text-[10px]">↵</kbd>}
+        </>
+      )}
+    />
+    <kbd className="rounded border bg-background px-1.5 py-0.5 text-[10px]">⌘ K</kbd>
+  </div>
+  <div className="flex items-center justify-between bg-secondary/30 px-3 py-1.5 text-[11px]">
+    <span>↑↓ to navigate · ↵ to select · esc to dismiss</span>
+    <span>{COMMANDS.length} actions</span>
+  </div>
+</div>`}
 />
 
 ## Custom item renderer

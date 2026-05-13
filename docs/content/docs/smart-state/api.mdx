@@ -1,0 +1,99 @@
+---
+title: API reference
+description: useSmartState signature, options, return shape, and gotchas.
+---
+
+## Signature
+
+```ts
+function useSmartState<T>(
+  initial: T | (() => T),
+  defaultContext?: string,
+  options?: UseSmartStateOptions<T>,
+): readonly [T, Dispatch<SetStateAction<T>>, SmartStateAI<T>];
+```
+
+`T` is inferred from `initial`. The runtime shape used for prompting & validation is read from the **value** of `initial`, so JS callers get the same behavior without annotations.
+
+## Options
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `shape` | `ShapeDescriptor` | inferred | Escape hatch when `initial` is `null`, `undefined`, or empty. |
+| `cache` | `boolean` | `true` | LRU(16) keyed by `(shape, context)`. |
+| `maxTokens` | `number` | `512` | Per-call token cap. |
+| `temperature` | `number` | `0.7` | Sampling temperature. |
+| `onGenerate` | `(value: T) => void` | — | Fires after a successful generate, with the parsed value. |
+
+## Return shape
+
+The hook returns a tuple `[value, setValue, ai]`:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `value` | `T` | Current value. Full `useState` semantics. |
+| `setValue` | `Dispatch<SetStateAction<T>>` | Setter. **Cancels any in-flight generate.** |
+| `ai.generate` | `(contextOverride?: string) => void` | Trigger an AI fill. Optional per-call context. |
+| `ai.status` | `'idle' \| 'loading' \| 'ready' \| 'error'` | State machine. |
+| `ai.error` | `Error \| null` | Set when status is `error`. |
+| `ai.reset` | `() => void` | Reset status/error to `idle` (does not change value). |
+
+## ShapeDescriptor
+
+```ts
+type ShapeLeaf = 'string' | 'number' | 'boolean';
+
+type ShapeDescriptor =
+  | ShapeLeaf
+  | { type: 'object'; fields: Record<string, ShapeDescriptor> }
+  | { type: 'array'; item: ShapeDescriptor };
+```
+
+Examples:
+
+```ts
+'string'
+{ type: 'array', item: 'string' }
+{ type: 'object', fields: { name: 'string', age: 'number' } }
+{ type: 'array', item: { type: 'object', fields: { title: 'string', done: 'boolean' } } }
+```
+
+## Drop-in `useState` behavior
+
+```tsx
+const [count, setCount] = useSmartState(0);
+setCount(5);
+setCount((c) => c + 1);
+```
+
+If you don't pass `defaultContext`, `ai.generate()` is still callable — you'll need to pass a context override every time.
+
+## Errors
+
+```tsx
+const [v, , ai] = useSmartState(0, 'random');
+
+{ai.status === 'error' && <p style={{ color: 'red' }}>{ai.error?.message}</p>}
+```
+
+Common error reasons:
+
+- **`cannot infer shape`** — `initial` is `null`/`undefined`/empty and `options.shape` wasn't passed.
+- **`JSON.parse failed`** — the model returned non-JSON. Try lowering `temperature`.
+- **`expected <type>, got <type>`** — shape validation failed. The hook returns a specific field path in the error.
+
+## Cache
+
+LRU(16) keyed by `(JSON.stringify(shape), context)`. Hits are synchronous — no re-render flash. Opt out:
+
+```tsx
+useSmartState(0, 'random', { cache: false });
+```
+
+## Notes & gotchas
+
+- **`setValue` mid-generate cancels the in-flight call** — user intent beats AI.
+- **`useSmartState({ tags: [] })` throws at mount** — the inner empty array can't be introspected. Seed it (`tags: ['example']`) or pass `options.shape`.
+- **`Date`, `Map`, `Set`, `RegExp`, functions, `bigint`, `symbol` in `initial` throw at mount** — JSON-serializable types only.
+- **Requires the `SmartClient` to support `'complete'`.** No streaming — generate is atomic; `setValue` fires once on success.
+- **JS works identically.** No generics needed — the shape comes from `initial` at runtime.

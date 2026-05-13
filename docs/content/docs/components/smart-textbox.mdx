@@ -4,6 +4,7 @@ description: Single-line input with Copilot-style ghost-text completion.
 ---
 
 import SmartTextboxDemo from '@/components/demos/SmartTextboxDemo';
+import SmartTextboxStylized from '@/components/demos/SmartTextboxStylized';
 import { SMART_TEXTBOX_PROPS, SMART_TEXTBOX_HANDLE } from '@/components/mdx/props/smart-textbox';
 
 A single-line input that streams ghost-text suggestions inline. `ArrowRight` accepts (configurable), `Esc` dismisses. Caret-at-end gating means `ArrowRight` retains its normal cursor-movement behavior elsewhere.
@@ -35,6 +36,28 @@ export function Example() {
     </SmartProvider>
   );
 }`}
+/>
+
+## Styled example
+
+A polished take with a gradient border, leading sparkle, violet italic ghost-text, and a visible accept hint.
+
+<Preview
+  demo={<SmartTextboxStylized />}
+  source={`<div className="rounded-2xl bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-cyan-500 p-[1.5px]">
+  <div className="flex items-center gap-2 rounded-[14px] bg-card px-3">
+    <span>✦</span>
+    <SmartTextbox
+      value={value}
+      onChange={setValue}
+      placeholder="Type Hello, Dear, or Thanks…"
+      context="user is writing a support reply"
+      className="flex-1 bg-transparent py-3 text-base outline-none"
+      ghostStyle={{ color: '#a855f7', opacity: 0.7, fontStyle: 'italic' }}
+    />
+    <kbd className="rounded-md border bg-background px-1.5 py-0.5 text-[10px]">→</kbd>
+  </div>
+</div>`}
 />
 
 ## Styling the ghost

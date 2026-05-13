@@ -1,4 +1,4 @@
 {
   "title": "smart-components",
-  "pages": ["index", "getting-started", "providers", "components", "hooks"]
+  "pages": ["index", "getting-started", "providers", "smart-state", "components", "hooks"]
 }

@@ -1,0 +1,91 @@
+---
+title: Form autofill
+description: Type a one-line brief → fill a strongly-typed event form with one call.
+---
+
+import SmartStateFormSkeleton from '@/components/demos/SmartStateFormSkeleton';
+import SmartStateFormStylized from '@/components/demos/SmartStateFormStylized';
+
+Seed the form with empty fields of the right types, pass a plain-English brief, and `ai.generate(brief)` fills every field. The hook validates the response against the seeded shape — missing fields surface as `ai.error`.
+
+### Skeleton
+
+The raw plumbing — same hook, no styling.
+
+<Preview
+  demo={<SmartStateFormSkeleton />}
+  source={`const [brief, setBrief] = useState('lunch with Sarah tomorrow at noon at Olive Garden');
+const [event, , ai] = useSmartState(
+  { title: '', attendees: [''], datetimeISO: '', location: '', notes: '' },
+  'A calendar event extracted from a one-line brief',
+);
+
+<textarea value={brief} onChange={(e) => setBrief(e.target.value)} />
+<button onClick={() => ai.generate(brief)}>Fill form</button>
+
+<dl>
+  <dt>Title</dt><dd>{event.title || '—'}</dd>
+  <dt>Attendees</dt><dd>{event.attendees.filter(Boolean).join(', ') || '—'}</dd>
+  <dt>When</dt><dd>{event.datetimeISO || '—'}</dd>
+  <dt>Where</dt><dd>{event.location || '—'}</dd>
+  <dt>Notes</dt><dd>{event.notes || '—'}</dd>
+</dl>`}
+/>
+
+### Stylized
+
+Quick-pick preset chips, a formatted date, attendee pills, and skeleton-loading animation.
+
+<Preview
+  demo={<SmartStateFormStylized />}
+  source={`const [event, , ai] = useSmartState(
+  { title: '', attendees: [''], datetimeISO: '', location: '', notes: '' },
+  'A calendar event extracted from a one-line brief',
+);
+const loading = ai.status === 'loading';
+
+<div className="rounded-2xl border bg-card p-5 shadow-sm">
+  <textarea value={brief} onChange={(e) => setBrief(e.target.value)} rows={2} />
+  <button onClick={() => ai.generate(brief)} disabled={loading} className="w-full rounded-lg bg-gradient-to-r from-indigo-500 to-cyan-500 py-2 text-white">
+    {loading ? 'Filling…' : '✦ Fill the form'}
+  </button>
+
+  <div className="grid grid-cols-[88px_1fr] gap-y-3 px-4 py-4">
+    <div>Title</div><div>{event.title}</div>
+    <div>When</div><div>{formatWhen(event.datetimeISO)}</div>
+    <div>Where</div><div>{event.location}</div>
+    <div>Attendees</div>
+    <div className="flex flex-wrap gap-1">
+      {event.attendees.filter(Boolean).map((a) => (
+        <span key={a} className="rounded-full bg-indigo-500/10 px-2 py-0.5 text-xs text-indigo-700">{a}</span>
+      ))}
+    </div>
+    <div>Notes</div><div>{event.notes}</div>
+  </div>
+</div>`}
+/>
+
+## Why this works
+
+The shape `{ title: string, attendees: string[], datetimeISO: string, location: string, notes: string }` is enough for the model to know exactly what to return. Behind the scenes:
+
+1. The seeded value is introspected into a `ShapeDescriptor`.
+2. A system prompt is generated asking for *JSON only*, matching that schema.
+3. The response is `JSON.parse`d and validated against the shape — missing/wrong-type fields become `ai.error`.
+
+## Production swap
+
+The skeleton and stylized demos use a mock client for predictable output. In production, swap the provider:
+
+```tsx
+import { SmartProvider } from '@extedcoud/smart-components';
+import { createOpenAIClient } from '@extedcoud/smart-components/adapters/openai';
+
+const client = createOpenAIClient({ /* via your proxy */ });
+
+<SmartProvider client={client}>
+  <YourFormComponent />
+</SmartProvider>
+```
+
+The hook code doesn't change.

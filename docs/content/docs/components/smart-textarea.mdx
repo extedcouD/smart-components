@@ -4,6 +4,7 @@ description: Multiline ghost-text completion with mirror-div positioning and opt
 ---
 
 import SmartTextareaDemo from '@/components/demos/SmartTextareaDemo';
+import SmartTextareaStylized from '@/components/demos/SmartTextareaStylized';
 import { SMART_TEXTAREA_PROPS } from '@/components/mdx/props/smart-textarea';
 
 Multiline variant of [`SmartTextbox`](./smart-textbox). Uses a mirror `<div>` for accurate ghost positioning across wraps. Optional `autoResize` grows the textarea to fit content.
@@ -34,6 +35,33 @@ export function Example() {
     </SmartProvider>
   );
 }`}
+/>
+
+## Styled example
+
+An email-composer chrome (window header, to/subject metadata, footer status) with a soft violet italic ghost.
+
+<Preview
+  demo={<SmartTextareaStylized />}
+  source={`<div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+  <div className="flex items-center justify-between border-b bg-secondary/40 px-4 py-2 text-xs">
+    <div className="flex items-center gap-2">
+      <span className="h-2 w-2 rounded-full bg-rose-500/80" />
+      <span className="h-2 w-2 rounded-full bg-amber-500/80" />
+      <span className="h-2 w-2 rounded-full bg-emerald-500/80" />
+      <span className="ml-2 font-medium">New message</span>
+    </div>
+    <span className="rounded-full bg-violet-500/10 px-2 py-0.5 text-violet-600">✦ AI assist</span>
+  </div>
+  <SmartTextarea
+    value={value}
+    onChange={setValue}
+    placeholder="Hi team, just wanted to say…"
+    autoResize
+    rows={4}
+    ghostStyle={{ color: '#7c3aed', opacity: 0.55, fontStyle: 'italic' }}
+  />
+</div>`}
 />
 
 ## Stop sequences
