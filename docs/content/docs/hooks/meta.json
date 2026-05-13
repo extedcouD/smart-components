@@ -1,0 +1,11 @@
+{
+  "title": "Hooks",
+  "pages": [
+    "use-ghost-completion",
+    "use-suggestion-list",
+    "use-rewrite",
+    "use-smart-state",
+    "use-debounced-value",
+    "use-lru"
+  ]
+}

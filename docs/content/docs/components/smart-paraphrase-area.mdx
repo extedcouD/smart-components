@@ -1,0 +1,43 @@
+---
+title: SmartParaphraseArea
+description: Multi-line textarea variant of SmartParaphraseBox.
+---
+
+import SmartParaphraseAreaDemo from '@/components/demos/SmartParaphraseAreaDemo';
+import { SMART_PARAPHRASE_AREA_PROPS } from '@/components/mdx/props/smart-paraphrase-area';
+
+Textarea variant of [`SmartParaphraseBox`](./smart-paraphrase-box). Built-in sparkle button rewrites in place; `autoResize` grows to fit; streaming supported.
+
+## Preview
+
+<Preview
+  demo={<SmartParaphraseAreaDemo />}
+  source={`import { useState } from 'react';
+import { SmartProvider, SmartParaphraseArea } from '@extedcoud/smart-components';
+import { createMockClient } from '@extedcoud/smart-components/adapters/mock';
+
+const client = createMockClient({
+  complete: async (req) => 'Thank you for getting back to me. I will look into this and respond tomorrow.',
+});
+
+export function Example() {
+  const [value, setValue] = useState(
+    'thx for getting back to me, lemme check on this and circle back tmrw',
+  );
+  return (
+    <SmartProvider client={client}>
+      <SmartParaphraseArea
+        value={value}
+        onChange={setValue}
+        autoResize
+        rows={3}
+        instruction="Rewrite in a polished, professional tone."
+      />
+    </SmartProvider>
+  );
+}`}
+/>
+
+## Props
+
+<PropsTable rows={SMART_PARAPHRASE_AREA_PROPS} />

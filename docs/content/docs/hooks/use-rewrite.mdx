@@ -1,0 +1,33 @@
+---
+title: useRewrite
+description: State machine for accept/reject rewrite flows. Streaming + LRU.
+---
+
+`useRewrite` is the engine behind [`SmartRewrite`](../components/smart-rewrite). Use directly when you want full control over the surrounding UI.
+
+```ts
+import { useRewrite } from '@extedcoud/smart-components';
+
+const { rewrite, status, error, run, accept, reject } = useRewrite({
+  value,
+  instruction: 'Rewrite in a polished, professional tone.',
+  context: 'audience is a customer support manager',
+  stream: false,
+  maxTokens: 512,
+  temperature: 0.4,
+  onAccept: (final) => setValue(final),
+});
+```
+
+## Return shape
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `rewrite` | `string` | Accumulating rewrite text. |
+| `status` | `'idle' \| 'loading' \| 'ready' \| 'error'` | State machine status. |
+| `error` | `Error \| null` | Set when status is `error`. |
+| `run` | `(instructionOverride?: string) => void` | Trigger a rewrite. |
+| `accept` | `() => void` | Calls `onAccept(rewrite)` and resets to idle. |
+| `reject` | `() => void` | Discards `rewrite`, returns to idle. |
+
+`run('...')` lets you override the default instruction per call — useful for preset-button rewrites.

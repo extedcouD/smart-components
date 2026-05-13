@@ -1,0 +1,48 @@
+---
+title: Custom client
+description: Roll your own SmartClient — the interface is five fields.
+---
+
+Anything that satisfies the `SmartClient` interface works as a provider. Roll your own for in-house LLMs, edge providers, or anything else the bundled adapters don't cover.
+
+```ts
+import { SMART_CLIENT_PROTOCOL_VERSION, type SmartClient } from '@extedcoud/smart-components';
+
+export const myClient: SmartClient = {
+  protocolVersion: SMART_CLIENT_PROTOCOL_VERSION,
+  id: 'my-edge-llm',
+  capabilities: new Set(['complete', 'stream']),
+
+  async complete(req) {
+    const res = await fetch('https://my-llm.example/complete', {
+      method: 'POST',
+      body: JSON.stringify(req),
+      signal: req.signal,
+    });
+    const { text } = await res.json();
+    return text;
+  },
+
+  async *stream(req) {
+    const res = await fetch('https://my-llm.example/stream', {
+      method: 'POST',
+      body: JSON.stringify(req),
+      signal: req.signal,
+    });
+    const reader = res.body!.getReader();
+    const dec = new TextDecoder();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      yield dec.decode(value, { stream: true });
+    }
+  },
+};
+```
+
+## Rules of the road
+
+- **Always honor `req.signal`.** Components abort when the user keeps typing past the debounce or unmounts.
+- **Throw `DOMException('Aborted', 'AbortError')`** (or let the underlying `fetch` do it) when aborted. Component error handling skips these silently.
+- **Declare exactly what you implement.** Adding `'stream'` to `capabilities` without a real `stream()` method will fail at runtime — `assertCapability` checks both.
+- **Don't include `protocolVersion`** as a number literal in user-facing types; import the constant. The version is checked at mount.

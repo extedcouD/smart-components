@@ -1,0 +1,71 @@
+---
+title: SmartSuggestion
+description: Combobox with AI-generated dropdown suggestions, keyboard nav, and full ARIA.
+---
+
+import SmartSuggestionDemo from '@/components/demos/SmartSuggestionDemo';
+import { SMART_SUGGESTION_PROPS } from '@/components/mdx/props/smart-suggestion';
+
+An input + listbox combobox that streams suggestions from your `SmartClient`. Arrow keys to navigate, `Enter` to pick, `Esc` to close. Implements the [ARIA 1.2 combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/).
+
+## Preview
+
+<Preview
+  demo={<SmartSuggestionDemo />}
+  source={`import { useState } from 'react';
+import { SmartProvider, SmartSuggestion } from '@extedcoud/smart-components';
+import { createMockClient } from '@extedcoud/smart-components/adapters/mock';
+
+const client = createMockClient({
+  complete: async () => ['Apple', 'Apricot', 'Banana', 'Blueberry'].join('\\n'),
+});
+
+export function Example() {
+  const [value, setValue] = useState('');
+  return (
+    <SmartProvider client={client}>
+      <SmartSuggestion
+        value={value}
+        onChange={setValue}
+        onSelect={(item) => console.log('picked', item)}
+        placeholder="Type to filter…"
+      />
+    </SmartProvider>
+  );
+}`}
+/>
+
+## Custom item renderer
+
+```tsx
+<SmartSuggestion
+  value={v}
+  onChange={setV}
+  renderItem={(item, { active }) => (
+    <span style={{ fontWeight: active ? 700 : 400 }}>
+      <SparkleIcon /> {item}
+    </span>
+  )}
+/>
+```
+
+## Empty + loading states
+
+```tsx
+<SmartSuggestion
+  value={v}
+  onChange={setV}
+  renderEmpty={() => <em>No matches</em>}
+  renderLoading={() => <span>Thinking…</span>}
+/>
+```
+
+## Props
+
+<PropsTable rows={SMART_SUGGESTION_PROPS} />
+
+## Mobile notes
+
+- Pointer events are used for selection — touch + mouse + pen unified.
+- Render items with `min-height: 44px` to meet WCAG touch-target minimum.
+- **Known limitation:** soft-keyboard overlap on narrow viewports. For phone-sized layouts, hoist the list via a portal or render a fullscreen picker.

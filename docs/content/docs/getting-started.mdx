@@ -1,0 +1,72 @@
+---
+title: Getting started
+description: Install, wire a SmartProvider, drop in your first component.
+---
+
+## Install
+
+```sh tab="pnpm"
+pnpm add @extedcoud/smart-components react react-dom
+```
+
+```sh tab="npm"
+npm install @extedcoud/smart-components react react-dom
+```
+
+```sh tab="yarn"
+yarn add @extedcoud/smart-components react react-dom
+```
+
+Zero runtime deps beyond `react` / `react-dom` — every adapter is plain `fetch`.
+
+## Wire a provider
+
+The library is **capability-based**. You bring a `SmartClient`; we use whatever it implements. For production, use the proxy adapter so your API key stays on the server:
+
+```tsx title="app.tsx"
+import { SmartProvider } from '@extedcoud/smart-components';
+import { createProxyClient } from '@extedcoud/smart-components/adapters/proxy';
+import '@extedcoud/smart-components/style.css';
+
+const client = createProxyClient({ url: '/api/smart' });
+
+export default function App({ children }) {
+  return (
+    <SmartProvider client={client} model="gpt-4o-mini">
+      {children}
+    </SmartProvider>
+  );
+}
+```
+
+<Callout type="info">
+  For dev or Storybook, use [`createMockClient`](./providers/mock) — it ships deterministic responses, no network.
+</Callout>
+
+## Drop in your first component
+
+```tsx title="reply-box.tsx"
+import { useState } from 'react';
+import { SmartTextbox } from '@extedcoud/smart-components';
+
+export function ReplyBox() {
+  const [value, setValue] = useState('');
+  return (
+    <SmartTextbox
+      value={value}
+      onChange={setValue}
+      placeholder="Type a reply…"
+      context="user is writing a customer support reply"
+    />
+  );
+}
+```
+
+That's it. As the user types, ghost suggestions appear inline. `ArrowRight` accepts; `Esc` dismisses.
+
+## Pick your next step
+
+- [SmartTextbox](./components/smart-textbox) — ghost completion for inputs
+- [SmartSuggestion](./components/smart-suggestion) — AI dropdown
+- [SmartRewrite](./components/smart-rewrite) — rewrite primitives
+- [Providers overview](./providers) — adapter capabilities & custom clients

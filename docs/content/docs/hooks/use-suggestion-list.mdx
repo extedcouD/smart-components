@@ -1,0 +1,34 @@
+---
+title: useSuggestionList
+description: The fetcher behind SmartSuggestion. Debounce + abort + LRU. Splits newline-separated responses.
+---
+
+`useSuggestionList` powers [`SmartSuggestion`](../components/smart-suggestion). Use it directly to build custom suggestion UIs (popovers, command palettes, mention pickers).
+
+```ts
+import { useSuggestionList } from '@extedcoud/smart-components';
+
+const { items, status, error } = useSuggestionList({
+  value,
+  context: 'naming a new project',
+  count: 5,
+  debounceMs: 300,
+  minChars: 1,
+  enabled: true,
+});
+```
+
+The hook fetches a newline-separated completion and splits/trims into `items`. Status mirrors [`useGhostCompletion`](./use-ghost-completion).
+
+## Tip: building a command palette
+
+```tsx
+const { items, status } = useSuggestionList({
+  value: query,
+  context: 'commands the user might run',
+  count: 8,
+  enabled: open && query.length > 0,
+});
+```
+
+Toggle `enabled` to gate fetches behind a "palette open" state.

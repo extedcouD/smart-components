@@ -1,0 +1,90 @@
+---
+title: SmartTextbox
+description: Single-line input with Copilot-style ghost-text completion.
+---
+
+import SmartTextboxDemo from '@/components/demos/SmartTextboxDemo';
+import { SMART_TEXTBOX_PROPS, SMART_TEXTBOX_HANDLE } from '@/components/mdx/props/smart-textbox';
+
+A single-line input that streams ghost-text suggestions inline. `ArrowRight` accepts (configurable), `Esc` dismisses. Caret-at-end gating means `ArrowRight` retains its normal cursor-movement behavior elsewhere.
+
+## Preview
+
+<Preview
+  demo={<SmartTextboxDemo />}
+  source={`import { useState } from 'react';
+import { SmartProvider, SmartTextbox } from '@extedcoud/smart-components';
+import { createMockClient } from '@extedcoud/smart-components/adapters/mock';
+
+const client = createMockClient({
+  complete: async (req) => req.prompt.endsWith('Hello')
+    ? ', how can I help you today?'
+    : ' …keep typing for more.',
+});
+
+export function Example() {
+  const [value, setValue] = useState('');
+  return (
+    <SmartProvider client={client}>
+      <SmartTextbox
+        value={value}
+        onChange={setValue}
+        placeholder="Type Hello…"
+        context="user is writing a support reply"
+      />
+    </SmartProvider>
+  );
+}`}
+/>
+
+## Styling the ghost
+
+By default the ghost is `opacity: 0.4` inheriting the input's `color`. To recolor it:
+
+```tsx
+<SmartTextbox
+  value={v}
+  onChange={setV}
+  ghostStyle={{ color: '#0066cc', fontStyle: 'italic', opacity: 0.7 }}
+/>
+```
+
+For richer markup (icons, badges) use the `renderGhost` render-prop. For global styling outside the component, target `[data-testid="smart-textbox-ghost"]`.
+
+## Imperative API (mobile-friendly accept)
+
+`ArrowRight` doesn't exist on most soft keyboards. For mobile, expose accept via a tap button using `forwardRef`:
+
+```tsx
+import { useRef } from 'react';
+import { SmartTextbox, type SmartTextboxHandle } from '@extedcoud/smart-components';
+
+function MobileFriendly() {
+  const ref = useRef<SmartTextboxHandle>(null);
+  const [v, setV] = useState('');
+  const [ghost, setGhost] = useState('');
+
+  return (
+    <>
+      <SmartTextbox ref={ref} value={v} onChange={setV} onGhostChange={setGhost} />
+      {ghost && <button onClick={() => ref.current?.accept()}>Accept "{ghost}"</button>}
+    </>
+  );
+}
+```
+
+## Props
+
+<PropsTable rows={SMART_TEXTBOX_PROPS} />
+
+## Imperative handle
+
+`forwardRef` exposes a `SmartTextboxHandle`:
+
+<PropsTable rows={SMART_TEXTBOX_HANDLE} />
+
+## Mobile notes
+
+- **`ArrowRight` is keyboard-only.** Use the imperative `accept()` or set `acceptKey="Enter"`.
+- **iOS Safari zoom-on-focus:** any input with `font-size < 16px` triggers viewport zoom. Use `font-size: 16px`+.
+- **IME composition** (Gboard predictive text) is gated internally — no flicker or misfired accepts.

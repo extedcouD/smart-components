@@ -1,0 +1,61 @@
+---
+title: SmartParaphraseBox
+description: Single-line input with a built-in sparkle button that paraphrases on tap.
+---
+
+import SmartParaphraseBoxDemo from '@/components/demos/SmartParaphraseBoxDemo';
+import { SMART_PARAPHRASE_BOX_PROPS } from '@/components/mdx/props/smart-paraphrase-box';
+
+Ready-made input that wraps [`SmartRewrite`](./smart-rewrite) with a paraphrase button. Tap the button to rewrite in place. Auto-accepts when complete (configurable via `onRewriteAccept`).
+
+## Preview
+
+<Preview
+  demo={<SmartParaphraseBoxDemo />}
+  source={`import { useState } from 'react';
+import { SmartProvider, SmartParaphraseBox } from '@extedcoud/smart-components';
+import { createMockClient } from '@extedcoud/smart-components/adapters/mock';
+
+const client = createMockClient({
+  complete: async (req) => 'Please let me know if there is anything else you need.',
+});
+
+export function Example() {
+  const [value, setValue] = useState('lemme know if you need anything else');
+  return (
+    <SmartProvider client={client}>
+      <SmartParaphraseBox
+        value={value}
+        onChange={setValue}
+        instruction="Rewrite in a polished, professional tone."
+      />
+    </SmartProvider>
+  );
+}`}
+/>
+
+## Custom button
+
+```tsx
+<SmartParaphraseBox
+  value={v}
+  onChange={setV}
+  renderButton={({ onClick, status, disabled }) => (
+    <button onClick={onClick} disabled={disabled}>
+      {status === 'loading' ? '…' : 'Rewrite'}
+    </button>
+  )}
+/>
+```
+
+## Streaming first paint
+
+```tsx
+<SmartParaphraseBox value={v} onChange={setV} stream />
+```
+
+While streaming, the input shows the partial rewrite (read-only) — accepted automatically on complete.
+
+## Props
+
+<PropsTable rows={SMART_PARAPHRASE_BOX_PROPS} />

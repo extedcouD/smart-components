@@ -1,0 +1,11 @@
+{
+  "title": "Components",
+  "pages": [
+    "smart-textbox",
+    "smart-textarea",
+    "smart-suggestion",
+    "smart-rewrite",
+    "smart-paraphrase-box",
+    "smart-paraphrase-area"
+  ]
+}

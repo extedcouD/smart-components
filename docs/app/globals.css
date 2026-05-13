@@ -1,0 +1,21 @@
+@import 'tailwindcss';
+@import '../node_modules/fumadocs-ui/css/neutral.css';
+@import '../node_modules/fumadocs-ui/css/preset.css';
+@import '../node_modules/@extedcoud/smart-components/dist/style.css';
+
+@source '../content/**/*.{md,mdx}';
+@source '../components/**/*.{ts,tsx}';
+@source '../app/**/*.{ts,tsx}';
+@source '../node_modules/fumadocs-ui/dist/**/*.js';
+
+:root {
+  color-scheme: light dark;
+}
+
+.demo-surface {
+  background: linear-gradient(180deg, #fafafa 0%, #f4f4f5 100%);
+}
+
+.dark .demo-surface {
+  background: linear-gradient(180deg, #18181b 0%, #09090b 100%);
+}

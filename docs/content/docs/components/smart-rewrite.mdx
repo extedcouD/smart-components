@@ -1,0 +1,100 @@
+---
+title: SmartRewrite
+description: Headless rewrite primitive (render-prop). Built-in presets, streaming, accept/reject.
+---
+
+import SmartRewriteDemo from '@/components/demos/SmartRewriteDemo';
+import { SMART_REWRITE_PROPS } from '@/components/mdx/props/smart-rewrite';
+
+Render-prop-only primitive that drives rewrite state for any text. Built-in presets: **Shorter / Formal / Casual / Fix grammar**. Renders no DOM of its own — you choose how to surface the buttons, preview, and accept/reject UX.
+
+## Preview
+
+<Preview
+  demo={<SmartRewriteDemo />}
+  source={`import { useState } from 'react';
+import { SmartProvider, SmartRewrite } from '@extedcoud/smart-components';
+import { createMockClient } from '@extedcoud/smart-components/adapters/mock';
+
+const client = createMockClient({
+  complete: async (req) => '— rewritten —',
+});
+
+export function Example() {
+  const [value, setValue] = useState('hey, lemme circle back tmrw');
+  return (
+    <SmartProvider client={client}>
+      <SmartRewrite value={value} onChange={setValue}>
+        {({ presets, run, status, rewrite, accept, reject }) => (
+          <>
+            <textarea value={rewrite || value} readOnly={status === 'loading'} />
+            {presets.map((p) => (
+              <button key={p.label} onClick={() => run(p.instruction)}>
+                {p.label}
+              </button>
+            ))}
+            {status === 'ready' && (
+              <>
+                <button onClick={accept}>Accept</button>
+                <button onClick={reject}>Reject</button>
+              </>
+            )}
+          </>
+        )}
+      </SmartRewrite>
+    </SmartProvider>
+  );
+}`}
+/>
+
+## Custom presets
+
+```tsx
+import { SmartRewrite } from '@extedcoud/smart-components';
+
+<SmartRewrite
+  value={v}
+  onChange={setV}
+  presets={[
+    { label: 'Pirate', instruction: 'Rewrite this like a pirate.' },
+    { label: 'Haiku', instruction: 'Rewrite this as a haiku.' },
+  ]}
+>
+  {/* render-prop */}
+</SmartRewrite>
+```
+
+Default presets are exported as `DEFAULT_REWRITE_PRESETS` if you want to extend instead of replace.
+
+## Streaming
+
+```tsx
+<SmartRewrite value={v} onChange={setV} stream>
+  {({ rewrite, status }) => (
+    <pre>{status === 'loading' ? rewrite + '▍' : rewrite}</pre>
+  )}
+</SmartRewrite>
+```
+
+Requires the active `SmartClient` to declare the `stream` capability.
+
+## Render-prop args
+
+| Arg | Type | Description |
+| --- | --- | --- |
+| `value` | `string` | The current source text. |
+| `presets` | `SmartRewritePreset[]` | The presets passed to (or defaulting on) the component. |
+| `rewrite` | `string` | The current rewritten text (accumulates while streaming). |
+| `status` | `'idle' \| 'loading' \| 'ready' \| 'error'` | State machine status. |
+| `error` | `Error \| null` | Set when status is `error`. |
+| `run` | `(instructionOverride?: string) => void` | Trigger a rewrite. |
+| `accept` | `() => void` | Commit the current rewrite via `onChange`. |
+| `reject` | `() => void` | Discard the rewrite, return to idle. |
+
+## Props
+
+<PropsTable rows={SMART_REWRITE_PROPS} />
+
+## When to reach for `SmartParaphraseBox` instead
+
+`SmartRewrite` is the primitive. If you want an out-of-the-box input + sparkle button + auto-accept, use [`SmartParaphraseBox`](./smart-paraphrase-box) (single-line) or [`SmartParaphraseArea`](./smart-paraphrase-area) (multi-line).

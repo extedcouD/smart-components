@@ -1,2 +1,7 @@
+packages:
+  - '.'
+  - 'docs'
 allowBuilds:
   esbuild: true
+  '@tailwindcss/oxide': true
+  sharp: true

@@ -1,0 +1,31 @@
+---
+title: OpenAI adapter
+description: Direct OpenAI calls. Dev/demo only — never ship keys to the browser.
+---
+
+<Callout type="warn">
+  **Browser-only as a dev aid.** Any key passed to `createOpenAIClient` ends up in the bundle that ships to users. For production use the [proxy adapter](./proxy).
+</Callout>
+
+`createOpenAIClient` talks to the OpenAI Chat Completions API directly via `fetch` — no SDK, no extra runtime weight.
+
+## Use it
+
+```tsx
+import { createOpenAIClient } from '@extedcoud/smart-components/adapters/openai';
+
+const client = createOpenAIClient({
+  apiKey: import.meta.env.VITE_OPENAI_KEY,  // dev only
+  model: 'gpt-4o-mini',
+});
+```
+
+The adapter warns at construction time if it detects a browser context.
+
+## Capabilities
+
+| Capability | Status |
+| --- | --- |
+| `complete` | ✓ |
+| `stream` | ✓ |
+| `embed` | — |

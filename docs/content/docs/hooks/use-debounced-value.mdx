@@ -1,0 +1,24 @@
+---
+title: useDebouncedValue
+description: Tiny debounce hook used internally. Useful for any "wait for the user to stop typing" flow.
+---
+
+```ts
+import { useDebouncedValue } from '@extedcoud/smart-components';
+
+const debounced = useDebouncedValue(value, 300);
+```
+
+Returns the latest `value` only after `delayMs` has passed without a change. Used internally by `useGhostCompletion` and `useSuggestionList` to gate AI calls behind the user pausing.
+
+## Example: search-as-you-type
+
+```tsx
+const [query, setQuery] = useState('');
+const debouncedQuery = useDebouncedValue(query, 250);
+
+useEffect(() => {
+  if (!debouncedQuery) return;
+  fetch(`/search?q=${debouncedQuery}`).then(/* ... */);
+}, [debouncedQuery]);
+```

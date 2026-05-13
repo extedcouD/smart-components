@@ -1,0 +1,29 @@
+---
+title: Anthropic adapter
+description: Anthropic Messages API. Dev/demo only.
+---
+
+<Callout type="warn">
+  Same browser-key warning as OpenAI — never ship a production app with this in the client bundle. Use the [proxy adapter](./proxy).
+</Callout>
+
+`createAnthropicClient` talks to the Anthropic Messages API via plain `fetch`. Implements `complete` and `stream`.
+
+## Use it
+
+```tsx
+import { createAnthropicClient } from '@extedcoud/smart-components/adapters/anthropic';
+
+const client = createAnthropicClient({
+  apiKey: import.meta.env.VITE_ANTHROPIC_KEY,
+  model: 'claude-haiku-4-5-20251001',
+});
+```
+
+## Capabilities
+
+| Capability | Status |
+| --- | --- |
+| `complete` | ✓ |
+| `stream` | ✓ |
+| `embed` | — |

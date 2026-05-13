@@ -1,0 +1,29 @@
+---
+title: useLRU
+description: Minimal in-memory LRU cache hook. Stable identity across renders.
+---
+
+```ts
+import { useLRU } from '@extedcoud/smart-components';
+
+const cache = useLRU<string, string>(16);
+cache.set('key', 'value');
+cache.get('key'); // 'value' — bumps to most-recent
+```
+
+Used internally by `useGhostCompletion`, `useSuggestionList`, `useRewrite`, and `useSmartState` to memoize completions keyed by `(prompt, context, ...)`. Stable identity across renders so it can be passed to effect deps without restarting fetches.
+
+## Methods
+
+| Method | Type | Description |
+| --- | --- | --- |
+| `get` | `(key: K) => V \| undefined` | Returns cached value and bumps to most-recent. |
+| `set` | `(key: K, value: V) => void` | Inserts; evicts oldest if over capacity. |
+| `has` | `(key: K) => boolean` | Without bumping recency. |
+| `delete` | `(key: K) => void` | Remove a single key. |
+| `clear` | `() => void` | Empty the cache. |
+
+## Tips
+
+- Capacity defaults to 16 — small but big enough for the typical "user typing in a textbox" workload.
+- The cache lives in a `useState(() => new LRU())` cell, so it survives across renders within a component but resets on unmount.

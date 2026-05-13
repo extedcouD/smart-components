@@ -1,0 +1,45 @@
+---
+title: Proxy adapter
+description: Recommended for production. Posts to your backend; your server holds the key.
+---
+
+`createProxyClient` is the **recommended production path**. The browser POSTs `{ prompt, system, model, ... }` to your backend; your backend forwards to the LLM provider holding the API key.
+
+## Use it
+
+```tsx title="app.tsx"
+import { createProxyClient } from '@extedcoud/smart-components/adapters/proxy';
+
+const client = createProxyClient({ url: '/api/smart' });
+```
+
+## Backend contract
+
+Your endpoint receives `POST /api/smart` with:
+
+```json
+{ "prompt": "...", "system": "...", "model": "gpt-4o-mini", "maxTokens": 32, "temperature": 0.4, "stop": ["\n\n"] }
+```
+
+It must respond with:
+
+```json
+{ "text": "the completion" }
+```
+
+For streaming, the endpoint should return `text/event-stream` with `data: <chunk>` lines. The adapter parses SSE natively.
+
+## Capabilities
+
+| Capability | Status |
+| --- | --- |
+| `complete` | ✓ |
+| `stream` | ✓ (if your backend serves SSE) |
+| `embed` | — |
+
+## Why proxy?
+
+- **Key safety.** Browser code can't be trusted with provider keys.
+- **Rate limiting.** Add your own quota / abuse limits at the proxy.
+- **Vendor swap.** Change provider on the server without shipping a new client build.
+- **Auth.** Attach your existing session cookies / JWT — no separate auth flow.

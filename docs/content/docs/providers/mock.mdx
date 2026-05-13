@@ -1,0 +1,55 @@
+---
+title: Mock adapter
+description: Deterministic responses for tests, Storybook, and this documentation site.
+---
+
+`createMockClient` is the canonical fixture. It powers every demo on this site and every story in Storybook.
+
+## Use it
+
+```tsx
+import { createMockClient } from '@extedcoud/smart-components/adapters/mock';
+
+const client = createMockClient({
+  complete: async (req) => `echo: ${req.prompt}`,
+  latencyMs: 200,
+});
+```
+
+Capabilities are derived from which option functions you pass — pass `complete` and you get `capabilities: new Set(['complete'])`.
+
+## Options
+
+| Option | Type | Description |
+| --- | --- | --- |
+| `complete` | `(req) => string \| Promise<string>` | Implements the `complete` capability. |
+| `stream` | `(req) => Iterable<string> \| AsyncIterable<string>` | Implements the `stream` capability. |
+| `embed` | `(req) => number[][] \| Promise<number[][]>` | Implements the `embed` capability. |
+| `latencyMs` | `number` | Artificial latency applied to every call. |
+| `id` | `string` | Override the client's `id`. Default: `"mock"`. |
+
+## Example: deterministic completions per prompt
+
+```ts
+const client = createMockClient({
+  latencyMs: 220,
+  complete: async (req) => {
+    if (req.prompt.endsWith('Hello')) return ', how can I help you today?';
+    if (req.prompt.endsWith('Thanks')) return ' so much for your patience.';
+    return ' …keep typing for more.';
+  },
+});
+```
+
+## Example: streaming
+
+```ts
+const client = createMockClient({
+  stream: async function* (req) {
+    for (const word of 'this rewrite streams word by word'.split(' ')) {
+      await new Promise((r) => setTimeout(r, 80));
+      yield word + ' ';
+    }
+  },
+});
+```

@@ -1,0 +1,49 @@
+---
+title: Providers
+description: The capability-based SmartClient interface — pick an adapter or roll your own.
+---
+
+`SmartClient` is the entire library's extension point. Every adapter implements this interface; every component uses [`assertCapability`](#capabilities) to declare what it needs.
+
+## The interface
+
+```ts
+import type { SmartClient } from '@extedcoud/smart-components';
+
+interface SmartClient {
+  readonly protocolVersion: 1;
+  readonly id?: string;
+  readonly capabilities: ReadonlySet<SmartCapability>;
+  complete?(req: CompleteRequest): Promise<CompleteResponse>;
+  stream?(req: CompleteRequest): AsyncIterable<string>;
+  embed?(req: EmbedRequest): Promise<EmbedResponse>;
+}
+```
+
+Every method is **optional**; `capabilities` is the source of truth. Components call `assertCapability(client, 'complete')` before invoking — if your adapter doesn't declare it, the consumer gets a clear error.
+
+## Capabilities
+
+| Capability | Method | Used by |
+| --- | --- | --- |
+| `complete` | `complete(req)` | All components by default |
+| `stream` | `stream(req)` | `stream` prop on `SmartTextbox`, `SmartTextarea`, `SmartRewrite`, `SmartParaphraseBox/Area` |
+| `embed` | `embed(req)` | Reserved for future components |
+
+## Pick an adapter
+
+| Adapter | Path | Best for |
+| --- | --- | --- |
+| [Proxy](./proxy) | `@extedcoud/smart-components/adapters/proxy` | **Production.** Your backend holds the key. |
+| [OpenAI](./openai) | `@extedcoud/smart-components/adapters/openai` | Dev / demos only. Never ship keys to the browser. |
+| [Anthropic](./anthropic) | `@extedcoud/smart-components/adapters/anthropic` | Dev / demos using Anthropic Messages. |
+| [Mock](./mock) | `@extedcoud/smart-components/adapters/mock` | Tests, Storybook, this documentation site. |
+| [Custom](./custom) | (your code) | Anything not covered — the interface is ~5 fields. |
+
+## Protocol version
+
+The library exports `SMART_CLIENT_PROTOCOL_VERSION` (currently `1`). `SmartProvider` throws at mount if the version doesn't match — adapters break loudly, not silently.
+
+## Why not a unified router?
+
+A unified "openai + anthropic + ..." router would belong in an adapter, not in core. Core stays provider-agnostic so the published bundle is tree-shakeable down to the components you import.

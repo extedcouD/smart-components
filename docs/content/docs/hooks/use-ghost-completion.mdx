@@ -1,0 +1,47 @@
+---
+title: useGhostCompletion
+description: The state machine behind SmartTextbox and SmartTextarea. Debounce + abort + LRU.
+---
+
+`useGhostCompletion` is the engine behind [`SmartTextbox`](../components/smart-textbox) and [`SmartTextarea`](../components/smart-textarea). Reach for it directly when you want ghost-completion behavior wired into a non-input element (contenteditable, custom editor frame, etc.).
+
+```ts
+import { useGhostCompletion } from '@extedcoud/smart-components';
+
+const { suggestion, status, error, fetchNow, clear } = useGhostCompletion({
+  value,
+  context: 'user is writing a support reply',
+  minChars: 3,
+  debounceMs: 300,
+  stream: false,
+  maxTokens: 32,
+  enabled: true,
+});
+```
+
+## Options
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `value` | `string` | — | The current input text. Triggers a fetch when it changes. |
+| `context` | `string` | — | Optional prompt context. |
+| `minChars` | `number` | `3` | Skip fetch under this length. |
+| `debounceMs` | `number` | `300` | Debounce window. |
+| `stream` | `boolean` | `false` | Use streaming if the client supports it. |
+| `maxTokens` | `number` | `32` | Per-call token cap. |
+| `stop` | `string[]` | — | Stop sequences passed to the client. |
+| `enabled` | `boolean` | `true` | Disables all fetches when false. |
+
+## Return shape
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `suggestion` | `string` | The current ghost text. `''` when none. |
+| `status` | `'idle' \| 'loading' \| 'ready' \| 'error'` | State machine. |
+| `error` | `Error \| null` | Set when status is `error`. Abort errors are ignored. |
+| `fetchNow` | `() => void` | Skip the debounce and fetch immediately. |
+| `clear` | `() => void` | Discard the current suggestion. |
+
+## Caching
+
+Internally uses an LRU(16) keyed by `(value, context, model)`. Repeated debounces on the same input hit the cache.

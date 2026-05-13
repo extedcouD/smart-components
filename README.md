@@ -2,6 +2,9 @@
 
 Headless React UI components powered by an LLM. Painfully small DOM, painfully customizable. You provide the AI client, we provide the behavior.
 
+📖 **[Full docs + interactive demos →](https://extedcoud.github.io/smart-components/)**
+🎮 **[Component playground (Storybook) →](https://extedcoud.github.io/smart-components/storybook/)**
+
 ## Install
 
 ```sh
@@ -185,15 +188,25 @@ const [user, setUser, ai] = useSmartState(
 
 ## Develop
 
+This is a pnpm workspace: root = lib, `docs/` = the public docs site (Next.js + Fumadocs, deployed to GH Pages).
+
 ```sh
 pnpm install
-pnpm storybook    # :6006
-pnpm test         # vitest watch
+pnpm storybook                        # :6006 — internal dev surface
+pnpm test                             # vitest watch
 pnpm lint
 pnpm typecheck
-pnpm build
+pnpm build                            # builds lib → dist/
+
+# Docs site (depends on dist/ — build lib first)
+pnpm --filter @extedcoud/smart-components build
+pnpm --filter docs dev                # :3000
+pnpm --filter docs build              # static export → docs/out/
 ```
+
+Docs deploy automatically to GH Pages via `.github/workflows/deploy-docs.yml` on push to `main`.
 
 ## Stack
 
-Vite (lib mode) · TypeScript · CSS Modules · ESLint 9 (flat) · Prettier · Vitest + RTL · Storybook.
+**Lib:** Vite (lib mode) · TypeScript · CSS Modules · ESLint 9 (flat) · Prettier · Vitest + RTL · Storybook.
+**Docs:** Next.js 15 (static export) · Fumadocs UI · Tailwind v4 · MDX.

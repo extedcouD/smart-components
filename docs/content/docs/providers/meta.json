@@ -1,0 +1,4 @@
+{
+  "title": "Providers",
+  "pages": ["index", "proxy", "openai", "anthropic", "mock", "custom"]
+}

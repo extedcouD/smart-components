@@ -7,3 +7,9 @@ coverage
 .vite
 .env
 .env.local
+
+# docs
+docs/.next
+docs/.source
+docs/out
+docs/node_modules

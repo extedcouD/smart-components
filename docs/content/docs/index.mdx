@@ -1,0 +1,30 @@
+---
+title: Introduction
+description: Headless React AI components — ghost completion, suggestions, rewrite. Provider-agnostic. Mobile-first.
+---
+
+`@extedcoud/smart-components` is a small set of **headless** React components powered by an LLM. We ship behavior + AI plumbing; you ship the styling.
+
+## What's in the box
+
+- **`<SmartTextbox>`** — single-line input with Copilot-style ghost completion.
+- **`<SmartTextarea>`** — multiline ghost completion (mirror-div positioning).
+- **`<SmartSuggestion>`** — combobox with AI-generated dropdown items.
+- **`<SmartRewrite>`** — headless rewrite primitive (render-prop only).
+- **`<SmartParaphraseBox>` / `<SmartParaphraseArea>`** — ready-made paraphrase widgets.
+- **Hooks** — `useGhostCompletion`, `useSuggestionList`, `useRewrite`, `useSmartState`, `useDebouncedValue`, `useLRU`.
+- **Adapters** — `proxy`, `openai`, `anthropic`, `mock`.
+
+## Principles
+
+- **Headless.** No theme tokens, no default colors. Tailwind, CSS-in-JS, plain CSS — your call.
+- **Capability-based.** Components declare which `SmartClient` capabilities they need; adapters declare which they implement.
+- **Mobile-first.** IME composition gating, pointer events, imperative refs, 44px touch targets — equal weight with desktop.
+- **No runtime deps** beyond `react` / `react-dom`. Every adapter is plain `fetch`.
+
+## Where to next
+
+- [Getting started](./getting-started) — install + first component in ~5 minutes
+- [Providers](./providers) — pick or build a `SmartClient` adapter
+- [Components](./components/smart-textbox) — full API reference
+- [Hooks](./hooks/use-ghost-completion) — power-user surface

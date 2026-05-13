@@ -1,0 +1,66 @@
+---
+title: SmartTextarea
+description: Multiline ghost-text completion with mirror-div positioning and optional auto-resize.
+---
+
+import SmartTextareaDemo from '@/components/demos/SmartTextareaDemo';
+import { SMART_TEXTAREA_PROPS } from '@/components/mdx/props/smart-textarea';
+
+Multiline variant of [`SmartTextbox`](./smart-textbox). Uses a mirror `<div>` for accurate ghost positioning across wraps. Optional `autoResize` grows the textarea to fit content.
+
+## Preview
+
+<Preview
+  demo={<SmartTextareaDemo />}
+  source={`import { useState } from 'react';
+import { SmartProvider, SmartTextarea } from '@extedcoud/smart-components';
+import { createMockClient } from '@extedcoud/smart-components/adapters/mock';
+
+const client = createMockClient({
+  complete: async (req) => '\\n\\nLooking forward to next steps.',
+});
+
+export function Example() {
+  const [value, setValue] = useState('');
+  return (
+    <SmartProvider client={client}>
+      <SmartTextarea
+        value={value}
+        onChange={setValue}
+        placeholder="Compose your email…"
+        autoResize
+        rows={4}
+      />
+    </SmartProvider>
+  );
+}`}
+/>
+
+## Stop sequences
+
+Multiline completions default to stopping at `['\n\n']` — one paragraph. Override per-component:
+
+```tsx
+<SmartTextarea
+  value={v}
+  onChange={setV}
+  stop={['\n\n', 'Sincerely', '\n---']}
+/>
+```
+
+## Auto-resize
+
+```tsx
+<SmartTextarea value={v} onChange={setV} autoResize rows={2} />
+```
+
+Grows on input + on accept. Pair with a `max-height` in CSS if you want a scroll-after-N-lines behavior.
+
+## Props
+
+<PropsTable rows={SMART_TEXTAREA_PROPS} />
+
+## Mobile notes
+
+- **Do not** set `acceptKey="Enter"` — it hijacks newline.
+- For mobile, use the imperative `accept()` via the `SmartTextareaHandle` ref (same shape as `SmartTextboxHandle`).
