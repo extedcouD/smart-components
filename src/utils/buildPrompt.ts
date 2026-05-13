@@ -57,6 +57,48 @@ export function parseSuggestionResponse(raw: string): string[] {
     .filter(Boolean);
 }
 
+import {
+  renderShapeForPrompt,
+  validateAgainstShape,
+  type ShapeDescriptor,
+  type ValidateResult,
+} from './shape';
+
+export interface SmartStatePromptInput {
+  shape: ShapeDescriptor;
+  context?: string;
+}
+
+export function buildSmartStatePrompt({ shape, context }: SmartStatePromptInput): {
+  system: string;
+  prompt: string;
+} {
+  const system =
+    "You generate a single JSON value matching the user's schema. " +
+    'Return ONLY valid JSON — no prose, no commentary, no markdown code fences. ' +
+    'Every field in the schema MUST appear in the output with the specified type. ' +
+    'Strings use double quotes. Booleans are true/false. Numbers are unquoted.';
+  const prompt =
+    `Schema (type annotations as JSON-ish):\n${renderShapeForPrompt(shape)}\n\n` +
+    (context ? `Context: ${context}\n\n` : '') +
+    'Return a JSON value matching the schema.';
+  return { system, prompt };
+}
+
+export function parseStructuredResponse(
+  raw: string,
+  shape: ShapeDescriptor,
+): ValidateResult {
+  const trimmed = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '');
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(trimmed);
+  } catch (e) {
+    return { ok: false, reason: `JSON.parse failed: ${(e as Error).message}` };
+  }
+  return validateAgainstShape(parsed, shape);
+}
+
 export interface RewritePromptInput {
   value: string;
   instruction: string;

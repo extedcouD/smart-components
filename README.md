@@ -43,53 +43,8 @@ export function App() {
 - **`<SmartTextarea>`** — multiline ghost completion (mirror-div positioning, multiline stops, optional auto-resize).
 - **`<SmartSuggestion>`** — combobox with AI-generated dropdown suggestions. Arrow keys + Enter.
 - **`<SmartRewrite>`** — headless rewrite primitive (render-prop only). Built-in presets: Shorter / Formal / Casual / Fix grammar.
-- **`<SmartChat>` + `<SmartChatComposer>`** — multi-turn conversational primitive. Provider-agnostic chat protocol, streamed text-deltas, end-to-end tool calling (incl. auto-execute), multimodal (image content blocks), controlled or uncontrolled message state.
 
 All headless: minimal default DOM, `renderItem`/`renderGhost`/render-prop slots, every native input attribute passes through.
-
-### 10-line chat
-
-```tsx
-import { SmartProvider, SmartChat, SmartChatComposer } from '@extedcoud/smart-components';
-import { createOpenAIClient } from '@extedcoud/smart-components/adapters/openai';
-
-const client = createOpenAIClient({ apiKey: '…' });
-
-export function App() {
-  return (
-    <SmartProvider client={client}>
-      <SmartChat system="You are a helpful assistant.">
-        {({ messages, send, status }) => (
-          <>
-            {messages.map((m) => (
-              <div key={m.id}>
-                <b>{m.role}: </b>
-                {m.content.map((b, i) => (b.type === 'text' ? <span key={i}>{b.text}</span> : null))}
-              </div>
-            ))}
-            <SmartChatComposer onSend={send} disabled={status === 'streaming'} />
-          </>
-        )}
-      </SmartChat>
-    </SmartProvider>
-  );
-}
-```
-
-Add a tool with zero extra boilerplate — when an `execute` function is provided, the hook runs it automatically and feeds the result back:
-
-```tsx
-<SmartChat
-  tools={[{
-    name: 'get_weather',
-    description: 'Get current weather for a city.',
-    parameters: { type: 'object', properties: { city: { type: 'string' } }, required: ['city'] },
-    execute: async ({ city }) => (await fetch(`/api/weather?city=${city}`)).json(),
-  }]}
->{/* … */}</SmartChat>
-```
-
-Multimodal: pass content blocks to `send()` directly — `send([{type:'image', source:{kind:'base64', data, mediaType}}, {type:'text', text:'what is this?'}])`.
 
 ### Styling the ghost text
 
@@ -127,7 +82,7 @@ When adding new components: mobile + desktop are equal first-class targets. Test
 | `createProxyClient` | `/adapters/proxy` | **Recommended for prod.** POSTs to your backend; your server holds the key. |
 | `createOpenAIClient` | `/adapters/openai` | Direct OpenAI calls. Dev/demo only — never ship keys to the browser. |
 | `createMockClient` | `/adapters/mock` | Tests & Storybook. |
-| `createAnthropicClient` | `/adapters/anthropic` | Anthropic Messages API. Implements `chat` + `chatStream` (incl. tools + image content). |
+| `createAnthropicClient` | `/adapters/anthropic` | Anthropic Messages API. Implements `complete` + `stream`. |
 
 Roll your own by implementing the `SmartClient` interface:
 
@@ -146,10 +101,87 @@ const myClient: SmartClient = {
 ### Power-user hooks
 
 ```ts
-import { useGhostCompletion, useSuggestionList, useRewrite, useChat } from '@extedcoud/smart-components';
+import {
+  useGhostCompletion,
+  useSuggestionList,
+  useRewrite,
+  useSmartState,
+} from '@extedcoud/smart-components';
 ```
 
 Build your own components on the same protocol.
+
+## `useSmartState` — useState with AI fill
+
+Drop-in `useState` replacement that adds an `ai.generate(context?)` action. TS infers `T` from `initial`; the runtime shape is read from `initial`'s value, so JS callers get the same behavior without annotations.
+
+```tsx
+const [n, setN, ai] = useSmartState(0, 'a random integer between 1 and 100');
+// setN still works exactly like useState.
+<button onClick={() => ai.generate()} disabled={ai.status === 'loading'}>
+  {ai.status === 'loading' ? 'Generating…' : 'Generate'}
+</button>
+```
+
+### Examples
+
+**1. Drop-in replacement.** `setValue` keeps full `useState` semantics:
+
+```tsx
+const [count, setCount] = useSmartState(0);
+setCount(5);              // works
+setCount(c => c + 1);     // works
+```
+
+**2. Generate an object.** Shape inferred from the initial value:
+
+```tsx
+type User = { name: string; age: number; bio: string };
+const [user, setUser, ai] = useSmartState<User>(
+  { name: '', age: 0, bio: '' },
+  'a fictitious cyberpunk character',
+);
+<button onClick={() => ai.generate()}>Roll a new user</button>;
+```
+
+**3. Empty seed with explicit `shape`.** When initial is `null`, `undefined`, or `[]`, introspection has nothing to read — pass `options.shape`:
+
+```tsx
+const [tags, , ai] = useSmartState<string[]>([], 'tags for a sci-fi blog post', {
+  shape: { type: 'array', item: 'string' },
+});
+```
+
+**4. Per-call context override.** The default context can be overridden per call:
+
+```tsx
+const [user, , ai] = useSmartState({ name: '', age: 0 }, 'a hero');
+ai.generate('a villain'); // overrides 'a hero' for this call
+```
+
+**5. Disable cache + handle errors.**
+
+```tsx
+const [v, , ai] = useSmartState(0, 'random', { cache: false });
+{ai.status === 'error' && <p style={{ color: 'red' }}>{ai.error?.message}</p>}
+```
+
+**6. JS works identically.** No generics needed — the shape comes from `initial` at runtime:
+
+```js
+const [user, setUser, ai] = useSmartState(
+  { name: '', age: 0 },
+  'a fictitious cyberpunk character',
+);
+```
+
+### Notes & gotchas
+
+- Calling `setValue` while a generate is in flight **cancels** the in-flight call (user intent beats AI).
+- `useSmartState({ tags: [] })` will throw at mount — the inner empty array can't be introspected. Seed it (`tags: ['example']`) or pass `options.shape`.
+- `Date`, `Map`, `Set`, `RegExp`, functions, `bigint`, `symbol` in `initial` throw at mount — JSON-serializable types only.
+- LRU(16) cache keyed by `(shape, context)`. Repeated `generate('same context')` hits the cache. Opt out with `{ cache: false }`.
+- Requires the SmartClient to support `'complete'`. No streaming — generate is atomic; `setValue` fires once on success.
 
 ## Develop
 

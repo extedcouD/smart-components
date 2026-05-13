@@ -5,12 +5,6 @@ import {
   type SmartCapability,
   type SmartClient,
 } from '../../provider/types';
-import type { ChatRequest, ChatResponse, ChatStreamChunk } from '../../provider/chat-types';
-import {
-  buildOpenAIChatBody,
-  parseOpenAIChatResponse,
-  parseOpenAIChatSse,
-} from './chat-translate';
 
 export interface OpenAIClientOptions {
   /** OpenAI API key. NEVER ship in browser code for production — use `createProxyClient` instead. */
@@ -117,13 +111,10 @@ export function createOpenAIClient(opts: OpenAIClientOptions): SmartClient {
     return res;
   }
 
-  const pickChatModel = (req: ChatRequest): string =>
-    req.model ?? opts.defaultModel ?? 'gpt-4o-mini';
-
   return {
     protocolVersion: SMART_CLIENT_PROTOCOL_VERSION,
     id: 'openai',
-    capabilities: new Set<SmartCapability>(['complete', 'stream', 'chat', 'chatStream']),
+    capabilities: new Set<SmartCapability>(['complete', 'stream']),
 
     async complete(req: CompleteRequest): Promise<CompleteResponse> {
       const res = await postChat(
@@ -153,19 +144,6 @@ export function createOpenAIClient(opts: OpenAIClientOptions): SmartClient {
         req.signal,
       );
       yield* parseChatSse(res, req.signal);
-    },
-
-    async chat(req: ChatRequest): Promise<ChatResponse> {
-      const body = buildOpenAIChatBody(req, pickChatModel(req), false);
-      const res = await postChat(body as unknown as Record<string, unknown>, req.signal);
-      const json = await res.json();
-      return parseOpenAIChatResponse(json);
-    },
-
-    async *chatStream(req: ChatRequest): AsyncIterable<ChatStreamChunk> {
-      const body = buildOpenAIChatBody(req, pickChatModel(req), true);
-      const res = await postChat(body as unknown as Record<string, unknown>, req.signal);
-      yield* parseOpenAIChatSse(res, req.signal);
     },
   };
 }

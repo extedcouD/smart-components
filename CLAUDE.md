@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `@extedcoud/smart-components` — headless React components powered by an LLM. Minimal default DOM, consumers style everything. We ship *behavior + AI plumbing*, not styled widgets. Do NOT turn this into a styling library. No Button, no Card — every component must have AI-driven behavior to belong here.
 
-Current v0.2 components: `SmartTextbox` (single-line ghost), `SmartTextarea` (multiline ghost via mirror div), `SmartSuggestion` (combobox dropdown), `SmartRewrite` (headless rewrite primitive).
+Current v0.2 components: `SmartTextbox` (single-line ghost), `SmartTextarea` (multiline ghost via mirror div), `SmartSuggestion` (combobox dropdown), `SmartRewrite` (headless rewrite primitive). Scope is intentionally small + standalone — no multi-turn chat primitives.
 
 ## Commands
 

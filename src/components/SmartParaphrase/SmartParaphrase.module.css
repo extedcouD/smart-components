@@ -1,0 +1,83 @@
+.root {
+  position: relative;
+  display: inline-block;
+  touch-action: manipulation;
+}
+
+.field {
+  position: relative;
+  background: transparent;
+  color: inherit;
+  -webkit-text-fill-color: currentColor;
+  font: inherit;
+  width: 100%;
+  box-sizing: border-box;
+  padding-right: 40px;
+}
+
+.fieldArea {
+  resize: vertical;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.button {
+  position: absolute;
+  right: 4px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 6px;
+  touch-action: manipulation;
+}
+
+.button:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.buttonBox {
+  bottom: 4px;
+}
+
+.buttonArea {
+  bottom: 8px;
+}
+
+.buttonLoading {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.icon {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: smartParaphraseSpin 0.7s linear infinite;
+}
+
+@keyframes smartParaphraseSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}

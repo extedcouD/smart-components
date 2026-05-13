@@ -1,5 +1,3 @@
-import type { ChatRequest, ChatResponse, ChatStreamChunk } from './chat-types';
-
 export const SMART_CLIENT_PROTOCOL_VERSION = 1 as const;
 export type SmartClientProtocolVersion = typeof SMART_CLIENT_PROTOCOL_VERSION;
 
@@ -9,8 +7,6 @@ export type SmartCapability =
   | 'embed'
   | 'tools'
   | 'structured'
-  | 'chat'
-  | 'chatStream'
   | 'vision'
   | 'transcribe';
 
@@ -39,16 +35,12 @@ export interface SmartClient {
   complete?(req: CompleteRequest): Promise<CompleteResponse>;
   stream?(req: CompleteRequest): AsyncIterable<string>;
   embed?(req: EmbedRequest): Promise<EmbedResponse>;
-  chat?(req: ChatRequest): Promise<ChatResponse>;
-  chatStream?(req: ChatRequest): AsyncIterable<ChatStreamChunk>;
 }
 
 type CapabilityMethodMap = {
   complete: 'complete';
   stream: 'stream';
   embed: 'embed';
-  chat: 'chat';
-  chatStream: 'chatStream';
 };
 
 export function assertCapability<C extends keyof CapabilityMethodMap>(

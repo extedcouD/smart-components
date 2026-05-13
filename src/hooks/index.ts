@@ -15,10 +15,10 @@ export type {
 } from './useSuggestionList';
 export { useRewrite } from './useRewrite';
 export type { UseRewriteOptions, UseRewriteResult, RewriteStatus } from './useRewrite';
-export { useChat } from './useChat';
+export { useSmartState } from './useSmartState';
 export type {
-  UseChatOptions,
-  UseChatResult,
-  ChatStatus,
-  PendingToolCall,
-} from './useChat';
+  UseSmartStateOptions,
+  UseSmartStateReturn,
+  SmartStateAI,
+  SmartStateStatus,
+} from './useSmartState';

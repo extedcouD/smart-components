@@ -15,17 +15,6 @@ export type {
   EmbedResponse,
   SmartProviderProps,
   SmartContextValue,
-  ChatRole,
-  ChatImageSource,
-  ChatContentBlock,
-  ChatMessage,
-  SmartTool,
-  ChatToolChoice,
-  ChatRequest,
-  ChatResponse,
-  ChatStreamChunk,
-  ChatFinishReason,
-  ChatUsage,
 } from './provider';
 
 export { SmartTextbox } from './components/SmartTextbox';
@@ -44,19 +33,23 @@ export type {
   SmartRewriteRenderArgs,
 } from './components/SmartRewrite';
 
-export { SmartChat, SmartChatComposer } from './components/SmartChat';
+export {
+  SmartParaphraseBox,
+  SmartParaphraseArea,
+} from './components/SmartParaphrase';
 export type {
-  SmartChatProps,
-  SmartChatHandle,
-  SmartChatComposerProps,
-  SmartChatComposerHandle,
-} from './components/SmartChat';
+  SmartParaphraseBoxProps,
+  SmartParaphraseBoxHandle,
+  SmartParaphraseAreaProps,
+  SmartParaphraseAreaHandle,
+  ParaphraseButtonRenderArgs,
+} from './components/SmartParaphrase';
 
 export {
   useGhostCompletion,
   useSuggestionList,
   useRewrite,
-  useChat,
+  useSmartState,
   useDebouncedValue,
   useLRU,
 } from './hooks';
@@ -70,9 +63,11 @@ export type {
   UseRewriteOptions,
   UseRewriteResult,
   RewriteStatus,
-  UseChatOptions,
-  UseChatResult,
-  ChatStatus,
-  PendingToolCall,
+  UseSmartStateOptions,
+  UseSmartStateReturn,
+  SmartStateAI,
+  SmartStateStatus,
   LRU,
 } from './hooks';
+
+export type { ShapeDescriptor, ShapeLeaf } from './utils/shape';

@@ -1,14 +1,10 @@
 import {
   SMART_CLIENT_PROTOCOL_VERSION,
+  type CompleteRequest,
+  type CompleteResponse,
   type SmartCapability,
   type SmartClient,
 } from '../../provider/types';
-import type { ChatRequest, ChatResponse, ChatStreamChunk } from '../../provider/chat-types';
-import {
-  buildAnthropicChatBody,
-  parseAnthropicChatResponse,
-  parseAnthropicChatSse,
-} from './chat-translate';
 
 export interface AnthropicClientOptions {
   /** Anthropic API key. NEVER ship in browser code for production — use `createProxyClient` instead. */
@@ -32,6 +28,15 @@ export interface AnthropicClientOptions {
 
 const DEFAULT_BASE = 'https://api.anthropic.com/v1';
 
+interface MessagesResponse {
+  content?: Array<{ type?: string; text?: string }>;
+}
+
+interface MessagesStreamEvent {
+  type?: string;
+  delta?: { type?: string; text?: string };
+}
+
 function warnIfBrowser(silenced: boolean | undefined): void {
   if (silenced) return;
   if (typeof window !== 'undefined') {
@@ -40,6 +45,53 @@ function warnIfBrowser(silenced: boolean | undefined): void {
         'Your Anthropic API key is exposed to anyone who opens devtools. ' +
         'For production, use `createProxyClient` and call Anthropic from your backend.',
     );
+  }
+}
+
+function buildBody(req: CompleteRequest, model: string, defaultMaxTokens: number, stream: boolean): Record<string, unknown> {
+  const body: Record<string, unknown> = {
+    model,
+    max_tokens: req.maxTokens ?? defaultMaxTokens,
+    messages: [{ role: 'user', content: req.prompt }],
+  };
+  if (req.system) body.system = req.system;
+  if (req.temperature !== undefined) body.temperature = req.temperature;
+  if (req.stop?.length) body.stop_sequences = req.stop;
+  if (stream) body.stream = true;
+  return body;
+}
+
+async function* parseMessagesSse(res: Response, signal?: AbortSignal): AsyncIterable<string> {
+  if (!res.body) throw new Error('[smart-components/anthropic] response has no body');
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  try {
+    while (true) {
+      if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let idx: number;
+      while ((idx = buffer.indexOf('\n')) !== -1) {
+        const line = buffer.slice(0, idx).trim();
+        buffer = buffer.slice(idx + 1);
+        if (!line || line.startsWith(':') || !line.startsWith('data:')) continue;
+        const data = line.slice(5).trim();
+        try {
+          const evt = JSON.parse(data) as MessagesStreamEvent;
+          if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta' && evt.delta.text) {
+            yield evt.delta.text;
+          } else if (evt.type === 'message_stop') {
+            return;
+          }
+        } catch {
+          // ignore malformed lines
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
   }
 }
 
@@ -58,7 +110,7 @@ export function createAnthropicClient(opts: AnthropicClientOptions): SmartClient
     ...opts.headers,
   };
 
-  const pickModel = (req: ChatRequest): string => req.model ?? defaultModel;
+  const pickModel = (req: CompleteRequest): string => req.model ?? defaultModel;
 
   async function postMessages(body: unknown, signal?: AbortSignal): Promise<Response> {
     const res = await fetch(`${baseUrl}/messages`, {
@@ -79,19 +131,19 @@ export function createAnthropicClient(opts: AnthropicClientOptions): SmartClient
   return {
     protocolVersion: SMART_CLIENT_PROTOCOL_VERSION,
     id: 'anthropic',
-    capabilities: new Set<SmartCapability>(['chat', 'chatStream']),
+    capabilities: new Set<SmartCapability>(['complete', 'stream']),
 
-    async chat(req: ChatRequest): Promise<ChatResponse> {
-      const body = buildAnthropicChatBody(req, pickModel(req), false, defaultMaxTokens);
+    async complete(req: CompleteRequest): Promise<CompleteResponse> {
+      const body = buildBody(req, pickModel(req), defaultMaxTokens, false);
       const res = await postMessages(body, req.signal);
-      const json = await res.json();
-      return parseAnthropicChatResponse(json);
+      const json = (await res.json()) as MessagesResponse;
+      return json.content?.filter((b) => b.type === 'text').map((b) => b.text ?? '').join('') ?? '';
     },
 
-    async *chatStream(req: ChatRequest): AsyncIterable<ChatStreamChunk> {
-      const body = buildAnthropicChatBody(req, pickModel(req), true, defaultMaxTokens);
+    async *stream(req: CompleteRequest): AsyncIterable<string> {
+      const body = buildBody(req, pickModel(req), defaultMaxTokens, true);
       const res = await postMessages(body, req.signal);
-      yield* parseAnthropicChatSse(res, req.signal);
+      yield* parseMessagesSse(res, req.signal);
     },
   };
 }
